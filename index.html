@@ -2579,7 +2579,7 @@ async function generarICS() {
 }
 
 /* ============ Cuenta en línea (Supabase) ============ */
-const NUBE = (() => { const c = window.AHORRO_CONFIG || {}; return { url: String(c.supabaseUrl || '').trim().replace(/\/+$/, ''), key: String(c.supabaseKey || '').trim() }; })();
+const NUBE = (() => { const c = window.AHORRO_CONFIG || {}; return { url: String(c.supabaseUrl || '').trim().replace(/\/+$/, ''), key: String(c.supabaseKey || '').trim(), codigo: c.loginConCodigo === true }; })();
 function enClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
 function nubeConfigurada() { return !!(NUBE.url && NUBE.key) && !enClaude(); }
 const SB_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -2610,6 +2610,7 @@ function crearCliente() {
   SB = window.supabase.createClient(NUBE.url, NUBE.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'ahorro-inteligente-auth' } });
   SB.auth.onAuthStateChange((ev, ses) => {
     setTimeout(() => {
+      if (ev === 'PASSWORD_RECOVERY' && ses?.user) { if (USR && DB) cambiarPass(); else { S.abrirPass = true; entrar(ses.user); } return; }
       if (ev === 'SIGNED_OUT') { if (USR && !SALIENDO) salirLocal({ aviso: 'Tu sesión se cerró. Vuelve a entrar.' }); }
       else if (ev === 'SIGNED_IN' && ses?.user && !USR && !(AUTH && AUTH.busy)) entrar(ses.user);
     }, 0);
@@ -2762,8 +2763,15 @@ function drawAuth() {
       ${crear ? `<label class="f">Repite la contraseña<input class="in" type="password" id="au_pass2" autocomplete="new-password"></label>` : ''}
       <div id="au_msg">${auMsgs()}</div>
       <button class="btn" type="submit">${crear ? 'Crear mi cuenta' : 'Entrar'}</button>
-      ${crear ? '<p class="tiny muted" style="margin:0">Te llega un código a tu correo para confirmar que es tuyo.</p>' : `<div class="auth-links"><button type="button" class="link" data-act="auCodigo">Entrar con un código</button><button type="button" class="link" data-act="auOlvide">¿Olvidaste tu contraseña?</button></div>`}
+      ${crear ? (NUBE.codigo ? '<p class="tiny muted" style="margin:0">Te llega un código a tu correo para confirmar que es tuyo.</p>' : '') : NUBE.codigo ? `<div class="auth-links"><button type="button" class="link" data-act="auCodigo">Entrar con un código</button><button type="button" class="link" data-act="auOlvide">¿Olvidaste tu contraseña?</button></div>` : `<div class="auth-links"><button type="button" class="link" data-act="auReset">¿Olvidaste tu contraseña?</button></div>`}
     </form>`;
+  } else if (a.modo === 'enlace') {
+    card = `<div class="auth-card">
+      <button type="button" class="link ib" data-act="auModo" data-v="entrar" style="justify-self:start">${ICON.left}Volver</button>
+      <div><h2>${esc(a.titulo || 'Revisa tu correo')}</h2><p class="small muted" style="margin:4px 0 0;line-height:1.5">${a.html || ''}</p></div>
+      <div id="au_msg">${auMsgs()}</div>
+      <button type="button" class="btn" data-act="auModo" data-v="entrar">Ir a entrar</button>
+    </div>`;
   } else {
     const verif = a.modo === 'verificar', pide = !verif && a.paso === 1;
     const tit = verif ? 'Confirma tu correo' : a.olvide ? 'Recupera tu acceso' : 'Entrar con un código';
@@ -2826,6 +2834,7 @@ async function auEnviar() {
       auBusy(true);
       const { data, error } = await SB.auth.signInWithPassword({ email: a.email, password: pass });
       if (error) {
+        if (/not confirmed/i.test(error.message || '') && !NUBE.codigo) { try { await SB.auth.resend({ type: 'signup', email: a.email, options: { emailRedirectTo: urlApp() } }); } catch (e2) {} Object.assign(a, { modo: 'enlace', busy: false, err: '', ok: '', titulo: 'Confirma tu correo', html: `Tu cuenta todavía no está confirmada. Te envié un enlace a <b>${esc(a.email)}</b> (mira también en spam). Tócalo y luego vuelve aquí para entrar con tu contraseña.` }); drawAuth(); return; }
         if (/not confirmed/i.test(error.message || '')) { Object.assign(a, { modo: 'verificar', busy: false }); try { await SB.auth.resend({ type: 'signup', email: a.email }); a.ok = 'Te envié un código nuevo para confirmar tu correo.'; auEspera(); } catch (e2) {} drawAuth(); return; }
         throw error;
       }
@@ -2841,6 +2850,7 @@ async function auEnviar() {
       if (error) throw error;
       if (data.session) { toast('¡Cuenta creada!'); return entrar(data.user); }
       if (data.user && Array.isArray(data.user.identities) && !data.user.identities.length) return auErr('Ese correo ya tiene una cuenta. Entra con tu contraseña.');
+      if (!NUBE.codigo) { Object.assign(a, { modo: 'enlace', busy: false, err: '', ok: '', titulo: 'Confirma tu correo', html: `Cuenta creada. Te envié un enlace a <b>${esc(a.email)}</b> (mira también en spam). Tócalo y luego vuelve aquí para entrar con tu contraseña.` }); drawAuth(); return; }
       Object.assign(a, { modo: 'verificar', busy: false, ok: 'Cuenta creada. Te envié un código a tu correo.' }); auEspera(); drawAuth(); return;
     }
     if (a.modo === 'codigo' && a.paso === 1) {
@@ -2859,6 +2869,18 @@ async function auEnviar() {
     toast(a.modo === 'verificar' ? '¡Correo confirmado!' : '¡Listo, entraste!');
     return entrar(data.user || data.session?.user);
   } catch (e) { console.warn('auth', e); auErr(errEs(e)); }
+}
+async function auReset() {
+  const a = AUTH; if (!a || a.busy) return; auLeer();
+  if (!SB) return auErr('No hay conexión con el servidor. Revisa tu internet.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(a.email)) return auErr('Escribe arriba tu correo y vuelve a tocar "¿Olvidaste tu contraseña?".');
+  const b = document.querySelector('[data-act=auReset]'); if (b) { b.disabled = true; b.textContent = 'Enviando…'; }
+  try {
+    const { error } = await SB.auth.resetPasswordForEmail(a.email, { redirectTo: urlApp() });
+    if (error) throw error;
+    Object.assign(a, { modo: 'enlace', err: '', ok: '', titulo: 'Revisa tu correo', html: `Si <b>${esc(a.email)}</b> tiene cuenta, te llegó un enlace (mira también en spam). Ábrelo <b>en este mismo dispositivo</b>; en el iPhone se abre en Safari. Te deja entrar y te pide una contraseña nueva.` });
+    drawAuth();
+  } catch (e) { if (b) { b.disabled = false; b.textContent = '¿Olvidaste tu contraseña?'; } auErr(errEs(e)); }
 }
 async function auReenviar() {
   const a = AUTH; if (!a || a.espera > 0 || !SB) return;
@@ -2986,6 +3008,7 @@ document.addEventListener('click', async e => {
     case 'auOlvide': auLeer(); Object.assign(AUTH, { modo: 'codigo', paso: 1, err: '', ok: '', olvide: true }); drawAuth(); break;
     case 'auVer': ['au_pass', 'au_pass2'].forEach(k => { const i = document.getElementById(k); if (i) i.type = i.type === 'password' ? 'text' : 'password'; }); break;
     case 'auReenviar': auReenviar(); break;
+    case 'auReset': auReset(); break;
     case 'salir': confirmarSalir(); break;
     case 'salirSi': cerrarSesion(); break;
     case 'cambiarPass': cambiarPass(); break;

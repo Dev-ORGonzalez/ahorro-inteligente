@@ -28,20 +28,21 @@ Tiempo aproximado: 15–20 minutos. Solo se hace una vez.
 
 Con esto, cada cuenta solo puede leer, crear, cambiar y borrar **sus propias filas**. Lo bloquea la base de datos, no solo la app.
 
-## Paso 3 · Configurar el login por correo
+## Paso 3 · Configurar el login (correo + contraseña)
 
-**Authentication → Sign In / Providers → Email**
-- *Enable Email provider*: activado.
-- *Confirm email*: activado (así se comprueba que el correo es de quien se registra).
-- *Minimum password length*: 8.
-
-**Authentication → Emails (Templates)** — para que el correo traiga el código de 6 dígitos:
-- **Confirm signup**: agrega en el cuerpo `Tu código es: <b>{{ .Token }}</b>` (puedes dejar el enlace también).
-- **Magic Link**: agrega `Tu código para entrar es: <b>{{ .Token }}</b>`.
+**Authentication → Sign In / Providers**
+- *Allow new users to sign up*: activado (para crear tu cuenta).
+- *Confirm email*: **apagado**. Así entras directo al crear la cuenta, sin esperar correos.
+- *Email* → *Minimum password length*: 8.
 
 **Authentication → URL Configuration**
 - *Site URL*: `https://dev-orgonzalez.github.io/ahorro-inteligente/`
-- *Redirect URLs*: agrega esa misma dirección.
+- *Redirect URLs*: agrega esa misma dirección (la usa el enlace de "¿Olvidaste tu contraseña?").
+
+**Después de crear tu cuenta:** vuelve a *Sign In / Providers* y apaga *Allow new users to sign up*, para que nadie más pueda registrarse.
+
+> Con el correo incluido de Supabase no se pueden editar las plantillas, así que la app no usa códigos.
+> Si algún día configuras un SMTP propio (*Authentication → Emails → SMTP Settings*), pon `{{ .Token }}` en las plantillas y `loginConCodigo: true` en `config.js`.
 
 ## Paso 4 · Copiar tus claves a `config.js`
 
