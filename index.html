@@ -481,14 +481,6 @@ label.f{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
   .auth-safe,.auth .foot{grid-column:1/-1}
 }
 /* ===== Hannah ===== */
-.hn-btn{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:center;gap:8px;padding:0;border:0;border-radius:99px;background:linear-gradient(160deg,#E7F6EE,#BFE5D2);box-shadow:0 10px 26px rgba(8,45,32,.28),0 0 0 3px var(--surface);cursor:pointer;animation:hnIn .5s cubic-bezier(.2,.9,.3,1.3) both}
-.hn-btn img{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:50% 20%;display:block}
-.hn-btn-t{display:none}
-.hn-btn .hn-dot{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#2FBF7F;border:2.5px solid var(--surface)}
-.hn-btn.nuevo .hn-dot{background:#F2A93B;animation:hnPulse 1.6s infinite}
-.hn-btn:hover{transform:translateY(-2px)}
-.hn-btn:active{transform:scale(.96)}
-body.hn-touring .hn-btn{display:none}
 @keyframes hnIn{from{opacity:0;transform:scale(.6) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes hnPulse{0%,100%{box-shadow:0 0 0 0 rgba(242,169,59,.6)}60%{box-shadow:0 0 0 7px rgba(242,169,59,0)}}
 
@@ -552,28 +544,6 @@ body.hn-touring .hn-btn{display:none}
 .hn-crea div{display:flex;flex-direction:column;gap:2px}
 .hn-crea .eyebrow{color:var(--accent)}
 
-/* Tour */
-.hn-tour{position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:31;display:flex;justify-content:center;pointer-events:none}
-.hn-tour-in{pointer-events:auto;width:100%;max-width:480px;display:flex;gap:4px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.25);padding:12px 14px 14px 6px;animation:hnUp .3s cubic-bezier(.2,.9,.3,1)}
-.hn-tour-img{width:96px;flex:none;align-self:stretch;display:flex;align-items:flex-end;justify-content:center;border-radius:16px;overflow:hidden;background:#123D2E}
-.hn-tour-img.cut{background:none}
-.hn-tour-img img{width:100%;height:auto;max-height:150px;object-fit:contain;display:block}
-.hn-tour-img{position:relative;min-height:130px}
-.hn-tour-img:not(.cut) img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:cover;object-position:50% 35%}
-.hn-tour-txt{flex:1;min-width:0;padding-left:8px}
-.hn-tour-txt .eyebrow{color:var(--accent)}
-.hn-tour-txt h3{margin:2px 0 4px;font-size:17px}
-.hn-tour-txt p{margin:0;font-size:14px;line-height:1.45;color:var(--muted)}
-.hn-tour-dots{display:flex;gap:5px;margin:10px 0}
-.hn-tour-dots i{width:7px;height:7px;border-radius:99px;background:var(--line);transition:all .2s}
-.hn-tour-dots i.ok{background:color-mix(in srgb,var(--accent) 45%,var(--line))}
-.hn-tour-dots i.on{width:20px;background:var(--accent)}
-.hn-tour-b{display:flex;gap:7px}
-.hn-tour-b .btn{padding:10px 12px;font-size:14.5px;border-radius:12px;width:auto}
-.hn-tour-b .btn:last-child{flex:1}
-.hn-tour-b .btn.ghost:first-child{color:var(--muted)}
-.hn-spot{position:relative;z-index:25;animation:hnSpot 1.4s ease-in-out infinite}
-@keyframes hnSpot{0%,100%{box-shadow:0 0 0 0 rgba(47,191,127,.7)}50%{box-shadow:0 0 0 12px rgba(47,191,127,0)}}
 
 /* Acerca de */
 .about-hero{display:flex;gap:14px;align-items:center;padding:16px;border-radius:20px;background:linear-gradient(135deg,#0D3A2D,#0B7A55);color:#fff}
@@ -589,21 +559,92 @@ body.hn-touring .hn-btn{display:none}
 .meta-plan img{width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:50% 20%;background:linear-gradient(160deg,#E7F6EE,#BFE5D2);flex:none}
 
 @media (min-width: 1000px){
-  .hn-btn{right:28px;bottom:28px;padding-right:18px}
-  .hn-btn-t{display:block;font-weight:700;font-size:14.5px;color:#0D3A2D}
   .hn-bg{background:rgba(4,16,11,.18);backdrop-filter:none;-webkit-backdrop-filter:none}
   .hn{left:auto;right:28px;bottom:28px;width:410px;height:min(700px,calc(100vh - 56px));border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.3);border:1px solid var(--line)}
   .hn-in{padding-bottom:12px}
-  .hn-tour{left:240px;right:0;bottom:28px}
-  .hn-tour-in{max-width:540px}
-  .hn-tour-img{width:120px}
 }
-@media (prefers-reduced-motion: reduce){.hn-btn,.hn,.hn-m,.hn-chip,.hn-tour-in{animation:none}.hn-btn.nuevo .hn-dot,.hn-spot{animation:none}}
+@media (prefers-reduced-motion: reduce){.hn-btn,.hn,.hn-m,.hn-chip,.hc-box,.hc-spot,.hn-btn-av::before{animation:none}.hn-btn.nuevo .hn-dot,.hn-spot{animation:none}}
 .hn-tip{margin-top:9px;padding-top:9px;border-top:1px solid var(--line);font-size:14.5px}
 .hn-tip svg{color:var(--accent);vertical-align:-2px}
 body:has(#hnBtn:not([hidden])) .foot{padding-right:84px}
 @media (min-width: 1000px){body:has(#hnBtn:not([hidden])) .foot{padding-right:250px}}
 @media (max-height:620px){.hn-chips{flex-wrap:nowrap;overflow-x:auto;max-height:none;padding-bottom:8px}.hn-chip{flex:none;white-space:nowrap}}
+
+/* Botón de Hannah (renovado) */
+.hn-btn{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:center;gap:10px;padding:0;border:0;background:none;cursor:pointer;animation:hnIn .55s cubic-bezier(.2,.9,.3,1.3) both;-webkit-tap-highlight-color:transparent}
+.hn-btn-av{position:relative;width:62px;height:62px;border-radius:50%;padding:3px;background:conic-gradient(from 210deg,#F2C35B,#3DCB93,#0B7A55,#F2C35B);box-shadow:0 10px 24px rgba(8,45,32,.35),0 2px 6px rgba(8,45,32,.25);transition:transform .2s}
+.hn-btn-av::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(61,203,147,.55);animation:hnRing 2.6s ease-out infinite}
+.hn-btn-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 18%;display:block;background:radial-gradient(circle at 50% 35%,#FFFFFF,#D9F1E5 70%);border:2px solid #fff}
+.hn-btn-chat{position:absolute;right:-3px;bottom:-1px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#0B7A55;color:#fff;border:2.5px solid var(--surface);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.hn-btn.nuevo .hn-btn-chat{background:#F2A93B;animation:hnPulse 1.6s infinite}
+.hn-btn-t{display:none}
+.hn-btn:hover .hn-btn-av{transform:translateY(-2px) rotate(-4deg)}
+.hn-btn:active .hn-btn-av{transform:scale(.94)}
+body.hn-touring .hn-btn{display:none}
+body.hn-touring.hc-btn .hn-btn{display:flex;animation:none}
+@keyframes hnRing{0%{transform:scale(.9);opacity:.9}70%,100%{transform:scale(1.25);opacity:0}}
+
+/* Tutorial con foco */
+.hn-tour{position:fixed;inset:0;z-index:60;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hc-spot{position:fixed;border-radius:18px;box-shadow:0 0 0 200vmax rgba(3,14,10,.74);transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease;pointer-events:none}
+.hc-spot::after{content:"";position:absolute;inset:-3px;border-radius:inherit;border:3px solid #3DCB93;box-shadow:0 0 0 4px rgba(61,203,147,.25),0 0 26px rgba(61,203,147,.7);animation:hcGlow 1.5s ease-in-out infinite}
+.hc-spot.none::after{display:none}
+@keyframes hcGlow{0%,100%{opacity:1}50%{opacity:.45}}
+.hc-skip{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:2;display:flex;align-items:center;gap:6px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px;border-radius:99px;padding:8px 10px 8px 14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.hc-skip svg{width:16px;height:16px}
+.hc-box{position:fixed;left:10px;right:10px;display:flex;align-items:flex-end;gap:0;max-width:520px;margin:0 auto;cursor:default;animation:hcIn .35s cubic-bezier(.2,.9,.3,1.2)}
+.hc-box.abajo{bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.hc-box.arriba{top:calc(58px + env(safe-area-inset-top,0px))}
+.hc-box.mid{top:50%;transform:translateY(-50%)}
+@keyframes hcIn{from{opacity:0;translate:0 14px}to{opacity:1;translate:0 0}}
+.hc-han{width:104px;flex:none;margin-right:-14px;z-index:1;align-self:flex-end;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
+.hc-han img{width:100%;display:block}
+.hc-han:not(.cut) img{border-radius:22px;border:3px solid #fff;aspect-ratio:1;object-fit:cover;object-position:50% 30%}
+.hc-bub{position:relative;flex:1;min-width:0;background:linear-gradient(180deg,#FFFFFF,#F2FAF6);color:#0F241C;border-radius:22px;padding:14px 16px 14px 24px;border:3px solid #0B7A55;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.hc-bub::before{content:"";position:absolute;left:-11px;bottom:26px;width:18px;height:18px;background:#F4FAF7;border-left:3px solid #0B7A55;border-bottom:3px solid #0B7A55;transform:rotate(45deg);border-radius:0 0 0 4px}
+.hc-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0B7A55}
+.hc-top span{color:#5A6C63;letter-spacing:0}
+.hc-bub h3{margin:4px 0 4px;font-family:var(--f-display);font-size:19px;line-height:1.2;color:#0D3A2D}
+.hc-bub p{margin:0;font-size:15px;line-height:1.5;color:#2B3F36;min-height:4.5em}
+.hc-bub p.typing::after{content:"▍";color:#0B7A55;animation:hnDot .8s infinite}
+.hc-bar{height:5px;border-radius:99px;background:#DCE9E2;margin:12px 0 10px;overflow:hidden}
+.hc-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#3DCB93,#0B7A55);transition:width .35s}
+.hc-b{display:flex;gap:8px}
+.hc-b .btn{flex:1;padding:12px 14px;border-radius:14px;font-size:15.5px;background:linear-gradient(180deg,#14955F,#0B7A55);color:#fff;box-shadow:0 4px 0 #075A3E}
+.hc-b .btn:active{translate:0 2px;box-shadow:0 2px 0 #075A3E}
+.hc-back{width:48px;flex:none;border-radius:14px;border:2px solid #CFE3D8;background:#fff;color:#0B7A55;display:grid;place-items:center}
+
+/* Ajustes: tarjeta del tutorial */
+.tuto-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:20px;padding:12px 14px;background:linear-gradient(135deg,#0D3A2D,#0B7A55);color:#fff;box-shadow:0 8px 20px rgba(11,122,85,.25)}
+.tuto-card b{display:block;font-size:16px}
+.tuto-card small{display:block;font-size:13px;opacity:.85;line-height:1.35;margin-top:2px}
+.tuto-av{width:48px;height:48px;border-radius:50%;padding:2px;background:conic-gradient(#F2C35B,#3DCB93,#F2C35B);flex:none}
+.tuto-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 18%;background:#E7F6EE;display:block}
+.tuto-go{display:flex;align-items:center;gap:5px;font-weight:700;font-size:13.5px;background:rgba(255,255,255,.16);padding:8px 11px;border-radius:12px;flex:none}
+
+/* Registro hecho por Hannah */
+.hn-reg{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.hn-reg .eyebrow{display:flex;align-items:center;gap:5px;color:var(--accent)}
+.hn-reg-m{font-family:var(--f-display);font-size:26px;font-weight:800;letter-spacing:-.02em}
+.hn-reg-m.neg{color:var(--bad)} .hn-reg-m.pos{color:var(--accent)}
+.hn-ej{display:block;margin-top:6px;padding:8px 11px;border-radius:12px;background:var(--surface-2);font-style:italic}
+
+@media (min-width: 1000px){
+  .hn-btn{right:28px;bottom:28px;padding:5px 18px 5px 5px;border-radius:99px;background:linear-gradient(135deg,#0D3A2D,#0B7A55);box-shadow:0 14px 34px rgba(8,45,32,.38)}
+  .hn-btn-av{width:56px;height:56px;box-shadow:none}
+  .hn-btn-t{display:flex;flex-direction:column;text-align:left;color:#fff;line-height:1.15}
+  .hn-btn-t b{font-size:16px;font-family:var(--f-display)}
+  .hn-btn-t small{font-size:12.5px;opacity:.82}
+  .hn-btn-chat{border-color:#0D3A2D}
+  .hn-btn:hover{filter:brightness(1.08)}
+  .hc-box{max-width:600px;left:240px}
+  .hc-box.lado{left:270px;margin:0}
+  .hc-han{width:130px}
+  .hc-bub p{font-size:16px}
+}
+@media (max-width: 360px){.hc-han{width:82px}.hc-bub h3{font-size:17px}.hc-bub p{font-size:14px}}
+body.hn-on .saved{top:calc(14px + env(safe-area-inset-top,0px));bottom:auto}
+@media (min-width: 1000px){.hn-btn{padding-right:24px}}
 
 </style>
 </head>
@@ -1667,6 +1708,7 @@ function formTopes() {
 }
 function ajustes() {
   openSheet(`${sheetH('Ajustes')}<div class="stack">
+    <button class="tuto-card" data-hn="tutorial"><span class="tuto-av"><img src="${HANNAH_IMG.avatar}" alt=""></span><span class="grow"><b>Tutorial con Hannah</b><small>Te enseño toda la app paso a paso para que le saques el 100%</small></span><span class="tuto-go">${svgI('compass', 18, 2.1)}Empezar</span></button>
     <form id="aForm" class="stack" novalidate>
       <label class="f">Tu nombre<input class="in" id="aNombre" value="${esc(S.cfg.nombre)}"></label>
       <label class="f">Tasa del dólar (RD$ por US$1)<input class="in" id="aTasa" inputmode="decimal" value="${S.cfg.tasa}"></label>
@@ -3914,9 +3956,10 @@ const H_KB = {
 };
 
 /* ============ Hannah · asistente de ahorro (funciona dentro de la app, sin internet ni costo) ============ */
-const APP_VER = '1.2.0';
+const APP_VER = '1.3.0';
 const APP_FECHA = 'Noviembre 2026';
 const NOVEDADES = [
+  { v: '1.3.0', f: 'Noviembre 2026', items: ['Hannah anota por ti: escríbele “gasté 500 en comida con efectivo” o “ahorré 2,000 para mi carro” y queda registrado', 'Nuevo tutorial guiado: Hannah te señala cada parte de la app (Ajustes → Tutorial)', 'Botón de Hannah renovado'] },
   { v: '1.2.0', f: 'Noviembre 2026', items: ['Conoce a Hannah, tu asistente de ahorro: responde tus dudas y te enseña la app paso a paso', 'Nuevo botón “¿Cuánto dinero tengo hoy?” para ver tu situación en segundos', 'Metas guiadas: carro, casa, viaje y más, con cuánto apartar al mes', 'Tour guiado por toda la app', 'Nueva sección Acerca de, con la versión y las novedades'] },
   { v: '1.1.0', f: 'Noviembre 2026', items: ['Cuenta en línea con correo y contraseña: tus datos protegidos y solo tuyos', 'Se instala en el iPhone como app y abre sin internet', 'Exportar a Excel', 'Recordatorios en el Calendario y agenda de los próximos 15 días', 'Bono vacacional en la calculadora de Navidad'] },
   { v: '1.0.0', f: 'Primera versión', items: ['Registro de gastos con tarjeta o efectivo', 'Tarjetas con día de corte y pago', 'Plan del mes, proyección y simulador', 'Mis ahorros y metas'] },
@@ -3927,6 +3970,8 @@ CI.chat = '<path d="M20.5 12a8 8 0 0 1-11.6 7.1L3.5 20.5l1.4-5A8 8 0 1 1 20.5 12
 CI.info = '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>';
 CI.compass = '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>';
 CI.grid = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>';
+CI.plus = '<path d="M12 5v14M5 12h14"/>';
+CI.x = '<path d="M6 6l12 12M18 6 6 18"/>';
 CI.user = '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>';
 if (!ICON_PICK.includes('ring')) ICON_PICK.splice(ICON_PICK.indexOf('gift') + 1, 0, 'ring');
 
@@ -3971,7 +4016,7 @@ function hnMontar() {
   if ($('#hnBtn')) return;
   const b = document.createElement('button');
   b.id = 'hnBtn'; b.className = 'hn-btn'; b.setAttribute('aria-label', 'Hablar con Hannah, tu asistente de ahorro'); b.dataset.hn = 'abrir';
-  b.innerHTML = `<img src="${HANNAH_IMG.avatar}" alt="" width="54" height="54"><span class="hn-btn-t">Pregúntale a Hannah</span><i class="hn-dot" aria-hidden="true"></i>`;
+  b.innerHTML = `<span class="hn-btn-av"><img src="${HANNAH_IMG.avatar}" alt="" width="58" height="58"></span><span class="hn-btn-t"><b>Hannah</b><small>Tu asistente de ahorro</small></span><span class="hn-btn-chat" aria-hidden="true">${svgI('chat', 15, 2.2)}</span>`;
   const bg = document.createElement('div'); bg.id = 'hnBg'; bg.className = 'hn-bg'; bg.hidden = true; bg.dataset.hn = 'cerrar';
   const p = document.createElement('section'); p.id = 'hn'; p.className = 'hn'; p.hidden = true; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Hannah, asistente de ahorro');
   p.innerHTML = `<header class="hn-h">
@@ -3988,7 +4033,7 @@ function hnMontar() {
 }
 function hnBtnVis() {
   const b = $('#hnBtn'); if (!b) return;
-  const tapado = !S.cfg || HN.open || HN.tour || (OB && !$('#ob').hidden) || ($('#auth') && !$('#auth').hidden);
+  const tapado = !S.cfg || HN.open || (HN.tour && !(COACH[HN.tour.i] || {}).btn) || (OB && !$('#ob').hidden) || ($('#auth') && !$('#auth').hidden);
   b.hidden = !!tapado;
   b.classList.toggle('nuevo', hnEstado().visto !== APP_VER);
 }
@@ -4052,7 +4097,7 @@ function hnUser(t) { hnAdd({ who: 'u', html: esc(t) }); }
 const chip = (t, cmd, ic, main) => ({ t, cmd, ic, main });
 const hnPose = (k, alt) => ({ html: `<div class="hn-pose ${k === 'explica' || k === 'saluda' ? 'cut' : ''}"><img src="${HANNAH_IMG[k] || HANNAH_IMG.explica}" alt="${esc(alt || 'Hannah')}"></div>`, card: true });
 const hnGo = (t, cmd) => `<button class="hn-go" data-hn="${esc(cmd)}">${esc(t)}${ICON.right}</button>`;
-const MENU = () => [chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo', true), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Enséñame la app', 'tour', 'compass'), chip('Dame un consejo', 'consejo', 'sparkle'), chip('Preguntas frecuentes', 'temas', 'book'), chip('Acerca de la app', 'acerca', 'info')];
+const MENU = () => [chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo', true), chip('Registrar un gasto', 'reg', 'compras'), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Tutorial de la app', 'tour', 'compass'), chip('Dame un consejo', 'consejo', 'sparkle'), chip('Preguntas frecuentes', 'temas', 'book'), chip('Acerca de la app', 'acerca', 'info')];
 
 function hnInicio() {
   const n = hnNombre();
@@ -4069,7 +4114,7 @@ function hnAuto() {
   setTimeout(() => {
     const listo = hnSyncOk() && S.cfg && S.cfg.onboarded && hnEstado().visto !== APP_VER && !OB && !($('#auth') && !$('#auth').hidden) && $('#sheetWrap').hidden;
     if (!listo) { HN.auto = false; return; }
-    hnBienvenida('update');
+    hnBienvenida(hnEstado().visto ? 'novedades' : 'update');
   }, 1300);
 }
 function hnBienvenida(tipo) {
@@ -4080,14 +4125,20 @@ function hnBienvenida(tipo) {
     hnSay([hnPose('saluda', 'Hannah saludando'),
       `¡Bienvenido a Ahorro Inteligente${nb}! 🎉 Tu plan ya quedó listo.`,
       'Soy <b>Hannah</b> y voy a acompañarte en tu camino al ahorro. Estaré siempre en el botoncito de la esquina para lo que necesites: dudas de la app, tus metas o saber cuánto dinero tienes hoy.',
-      '¿Te doy un recorrido rápido para que la domines desde el primer día? Toma un minuto.'],
-      [chip('Sí, enséñame la app', 'tour', 'compass', true), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Más tarde', 'luego')]);
+      '¿Te doy el tutorial para que la domines desde el primer día? Te voy señalando cada parte; toma unos minutos y lo puedes omitir cuando quieras.'],
+      [chip('Sí, ver el tutorial', 'tour', 'compass', true), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Más tarde', 'luego')]);
+  } else if (tipo === 'novedades') {
+    hnSay([hnPose('celebra', 'Hannah con novedades'),
+      `¡${saludo()}${nb}! 👋 Traigo novedades en la versión <b>${APP_VER}</b>, y tus datos siguen intactos.`,
+      '✍️ <b>Ahora anoto por ti.</b> Escríbeme “gasté 500 en comida con efectivo” o “ahorré 2,000 para mi carro” y queda registrado al instante.',
+      '🧭 <b>Tutorial guiado:</b> te señalo cada parte de la app para que le saques el 100%. Lo encuentras también en Ajustes.'],
+      [chip('Ver el tutorial', 'tour', 'compass', true), chip('Registrar un gasto', 'reg', 'compras'), chip('Ahora no, gracias', 'luego')]);
   } else {
     hnSay([hnPose('saluda', 'Hannah saludando'),
       `¡${saludo()}${nb}! 👋 Soy <b>Hannah</b>, tu nueva asistente de ahorro.`,
       `Llegué con la actualización <b>${APP_VER}</b> para hacerte la app más fácil. Tranquilidad: <b>todos tus datos, metas y movimientos siguen exactamente como los dejaste.</b>`,
-      'Puedo decirte <b>cuánto dinero tienes hoy</b>, ayudarte a <b>crear una meta</b> (un carro, una casa, un viaje…), enseñarte la app paso a paso o responder tus dudas. ¿Por dónde empezamos?'],
-      [chip('Enséñame la app', 'tour', 'compass', true), chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo'), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Ahora no, gracias', 'luego')]);
+      'Puedo <b>anotar tus gastos por ti</b>, decirte <b>cuánto dinero tienes hoy</b>, ayudarte a <b>crear una meta</b> (un carro, una casa, un viaje…) y enseñarte la app con un tutorial. ¿Por dónde empezamos?'],
+      [chip('Ver el tutorial', 'tour', 'compass', true), chip('Registrar un gasto', 'reg', 'compras'), chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo'), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Ahora no, gracias', 'luego')]);
   }
 }
 
@@ -4209,30 +4260,109 @@ function hnCrearMeta() {
     [chip('Ver mi meta', 'verMeta:' + meta.id, 'meta', true), chip('Apartar dinero ahora', 'aportar:' + meta.id, 'ahorro'), chip('Menú', 'menu')]);
 }
 
-/* ---------- Tour guiado ---------- */
-function hnTour() { hnCerrar(); HN.tour = { i: 0 }; hnTourPaso(); hnBtnVis(); }
-function hnTourPaso() {
-  const T = H_KB.tour, i = HN.tour.i, st = T[i], el = $('#hnTour');
-  if (HN_TABS.includes(st.tab) && S.tab !== st.tab) { S.tab = st.tab; S.anim = true; closeSheet(); render(); }
-  window.scrollTo({ top: 0, behavior: hnReduce() ? 'auto' : 'smooth' });
-  document.querySelectorAll('.hn-spot').forEach(x => x.classList.remove('hn-spot'));
-  if (/^anota cada gasto/i.test(st.titulo)) { const f = $('.fab'); if (f) f.classList.add('hn-spot'); }
-  const img = st.pose === 'saluda' || st.pose === 'explica' ? HANNAH_IMG.explica : HANNAH_IMG[st.pose] || HANNAH_IMG.explica;
-  el.innerHTML = `<div class="hn-tour-in">
-    <div class="hn-tour-img ${st.pose === 'saluda' || st.pose === 'explica' ? 'cut' : ''}"><img src="${img}" alt=""></div>
-    <div class="hn-tour-txt"><div class="eyebrow">Paso ${i + 1} de ${T.length}</div><h3>${esc(st.titulo)}</h3><p>${esc(st.texto)}</p>
-      <div class="hn-tour-dots">${T.map((_, k) => `<i class="${k === i ? 'on' : k < i ? 'ok' : ''}"></i>`).join('')}</div>
-      <div class="hn-tour-b"><button class="btn ghost" data-hn="tourSalir">${i === T.length - 1 ? 'Cerrar' : 'Salir'}</button>${i > 0 ? `<button class="btn ghost" data-hn="tourAtras" aria-label="Paso anterior">${ICON.left}</button>` : ''}<button class="btn" data-hn="tourSig">${i === T.length - 1 ? '¡Terminar!' : 'Siguiente'}</button></div></div></div>`;
-  el.hidden = false; document.body.classList.add('hn-touring');
-  const b = el.querySelector('[data-hn=tourSig]'); if (b && !matchMedia('(pointer: coarse)').matches) b.focus();
+/* ---------- Tutorial guiado con foco (Hannah señala cada parte de la app) ---------- */
+const hnSec = (txt, sel = '#view section') => [...document.querySelectorAll(sel)].find(e => { const h = e.querySelector('h2,h3,.eyebrow'); return h && h.textContent.trim().toLowerCase().startsWith(txt.toLowerCase()); });
+const hnTabBtn = v => document.querySelector(`#tabs [data-act=tab][data-v="${v}"]`);
+const hnVis = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+const COACH = [
+  { pose: 'saluda', t: '¡Bienvenido al tutorial!', x: () => `¡Hola${hnNombre() ? ', ' + hnNombre() : ''}! Soy Hannah y en unos minutos te enseño toda la app, de pie a cabeza. Yo te voy señalando cada parte; tú solo toca Siguiente. Si ya la conoces, puedes omitir el tutorial cuando quieras.` },
+  { tab: 'inicio', el: () => $('#view section.note'), pose: 'explica', t: 'Tu billete verde', x: 'Este es el número más importante: lo que te queda para ahorrar este mes. Es lo que entra, menos tus gastos fijos y lo que gastas en el día a día. Mientras más grande, mejor vas.' },
+  { tab: 'inicio', el: () => $('#view section.daily'), pose: 'explica', t: 'Puedes gastar hoy', x: 'Aquí te digo cuánto puedes gastar por día hasta tu próximo cobro, ya con tus fijos y tu ahorro separados. Si lo respetas, llegas al cobro sin apuros.' },
+  { tab: 'inicio', el: () => $('#view header .month'), pose: 'piensa', t: 'Cambia de mes', x: 'Con estas flechas viajas entre meses para ver cómo te fue antes o planificar el que viene.' },
+  { tab: 'inicio', el: () => $('#view header [data-act=tema]'), pose: 'explica', t: 'Modo claro u oscuro', x: 'Toca la luna o el sol para cambiar los colores de la app. De noche, el modo oscuro descansa la vista.' },
+  { tab: 'inicio', el: () => $('#view header [data-act=ajustes]'), pose: 'anota', t: 'Ajustes', x: 'En el engranaje están tus Ajustes: tu nombre, la tasa del dólar, cuánto quieres ahorrar, el respaldo de tus datos, Excel, recordatorios en el Calendario y este mismo tutorial.' },
+  { tab: 'inicio', el: () => hnSec('Mis gastos fijos'), pose: 'anota', t: 'Tus gastos fijos', x: 'Aquí ves los gastos de cada mes: alquiler, luz, internet, préstamos… Cuando pagues uno, márcalo y yo lo descuento. Si este mes fue distinto, toca el monto y cámbialo.' },
+  { el: () => document.querySelector('.fab'), pose: 'anota', t: 'Registra cada gasto', x: 'Este botón es tu mejor amigo. Cada vez que gastes, tócalo y anota el monto, la categoría y con qué pagaste. Toma segundos y así tus números siempre dicen la verdad.' },
+  { el: () => $('#hnBtn'), btn: true, pose: 'saluda', t: 'Pídemelo a mí', x: 'Y si te da pereza, escríbeme. Por ejemplo: “gasté 500 en comida con efectivo” o “ahorré 2,000 para mi carro”, y yo lo anoto por ti. También te digo cuánto dinero tienes hoy y te ayudo con tus metas.' },
+  { tab: 'movs', el: () => hnTabBtn('movs'), pose: 'explica', t: 'Movimientos', x: 'En Movimientos está todo lo que has anotado, día por día.' },
+  { tab: 'movs', el: () => $('#view .search'), pose: 'piensa', t: 'Busca lo que sea', x: 'Escribe una nota, una categoría o el nombre de una tarjeta y lo encuentras al instante.' },
+  { tab: 'movs', el: () => $('#view .hscroll'), pose: 'explica', t: 'Filtra por tarjeta o categoría', x: 'Toca un filtro para ver solo lo que pagaste con una tarjeta, en efectivo o en una categoría. Así descubres en qué se te va el dinero.' },
+  { tab: 'tarjetas', el: () => hnTabBtn('tarjetas'), pose: 'explica', t: 'Tus tarjetas', x: 'En Tarjetas controlas tus tarjetas de crédito y tus préstamos.' },
+  { tab: 'tarjetas', el: () => $('#view .tiles'), pose: 'piensa', t: 'Lo que debes', x: 'Aquí ves cuánto debes en total en tus tarjetas y cuánto crédito estás usando. Lo sano es no pasar del 30% del límite.' },
+  { tab: 'tarjetas', el: () => $('#view .cc'), pose: 'explica', t: 'Corte y pago', x: 'Cada tarjeta te muestra su saldo. El día verde es el corte y el rojo es la fecha límite para pagar sin intereses. Tócala para registrar un pago o ajustar su saldo.' },
+  { tab: 'plan', el: () => hnTabBtn('plan'), pose: 'anota', t: 'Tu plan', x: 'En Plan organizas tu dinero: tus ingresos, tus gastos fijos y tus topes.' },
+  { tab: 'plan', el: () => $('#view .seg'), pose: 'explica', t: 'Cuatro secciones', x: 'Aquí cambias entre Fijos, Extras (incentivos, bonos y ventas), Proyección (cómo te irá) y Ahorro (dónde guardas tu dinero y tus metas).' },
+  { tab: 'extras', el: () => $('#view .tiles') || $('#view .chips'), pose: 'ahorra', t: 'Dinero extra', x: 'En Extras anotas lo que entra sin día fijo: incentivos, ventas, bonos. Márcalo como seguro o posible y toca “¿Llegó?” cuando lo recibas.' },
+  { tab: 'extras', el: () => $('#view .xmas'), pose: 'celebra', t: 'Tu doble sueldo', x: 'Aquí está la calculadora del bono navideño y el vacacional, para que planifiques en qué usarlo antes de que llegue.' },
+  { tab: 'proy', el: () => hnSec('Gastos que se exceden') || hnSec('Tu mes en números'), pose: 'piensa', t: 'Lo que debes vigilar', x: 'En Proyección te aviso qué gastos se están pasando y qué hacer para corregirlo a tiempo.' },
+  { tab: 'proy', el: () => hnSec('Simulador'), pose: 'piensa', t: 'Simulador', x: '¿Y si recortas el delivery o una suscripción? Pruébalo aquí y te digo cuánto ahorrarías en un año.' },
+  { tab: 'ahorro', el: () => $('#view .save-hero'), pose: 'ahorra', t: 'Mis ahorros', x: 'Aquí anotas dónde tienes tu dinero guardado y ves cómo crece mes a mes. Registra cada depósito o retiro.' },
+  { tab: 'ahorro', el: () => hnSec('Mis metas') || hnSec('Metas') || $('#view section.note'), pose: 'ahorra', t: 'Tus metas', x: 'Crea metas para un carro, una casa o un viaje. Si me dices “quiero ahorrar para…”, yo te armo el plan y te digo cuánto apartar cada mes.' },
+  { pose: 'celebra', end: true, t: '¡Ya eres experto!', x: 'Eso es todo. Ya conoces la app de pie a cabeza. Lo más importante: anota cada gasto y separa tu ahorro el día que cobras. Puedes repetir este tutorial en Ajustes cuando quieras. ¡A ahorrar!' },
+];
+function hnTour() {
+  hnCerrar(); closeSheet(); if (OB) closeOB();
+  HN.tour = { i: 0, tab0: S.tab }; hnMontar();
+  document.body.classList.add('hn-touring'); $('#hnTour').hidden = false;
+  addEventListener('resize', hnCoachPos); addEventListener('scroll', hnCoachPos, { passive: true });
+  hnTourPaso(); hnBtnVis();
 }
+function hnTourPaso(dir = 1) {
+  if (!HN.tour) return;
+  const st = COACH[HN.tour.i];
+  if (st.tab && S.tab !== st.tab) { S.tab = st.tab; S.anim = false; render(); }
+  document.body.classList.toggle('hc-btn', !!st.btn); hnBtnVis();
+  let el = st.el ? st.el() : null;
+  if (st.el && !hnVis(el)) { // si esa parte no existe en esta pantalla, se salta
+    const n = HN.tour.i + dir; if (n >= 0 && n < COACH.length) { HN.tour.i = n; return hnTourPaso(dir); }
+    el = null;
+  }
+  HN.tour.el = el;
+  if (el && !hnFijo(el)) {
+    const r = el.getBoundingClientRect(), vh = innerHeight;
+    const y = scrollY + r.top - (r.height > vh * 0.45 ? 90 : Math.max(90, (vh * 0.5 - r.height) / 2));
+    window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+  }
+  const c = $('#hnTour'), cut = st.pose === 'saluda' || st.pose === 'explica';
+  const i = HN.tour.i, N = COACH.length, txt = typeof st.x === 'function' ? st.x() : st.x;
+  c.innerHTML = `<div class="hc-spot" id="hcSpot"></div>
+    <button class="hc-skip" data-hn="tourSalir">${st.end ? 'Cerrar' : 'Omitir tutorial'} ${ICON.x}</button>
+    <div class="hc-box" id="hcBox" role="dialog" aria-live="polite">
+      <div class="hc-han ${cut ? 'cut' : ''}"><img src="${cut ? HANNAH_IMG.explica : HANNAH_IMG[st.pose] || HANNAH_IMG.explica}" alt="Hannah"></div>
+      <div class="hc-bub">
+        <div class="hc-top"><b>Hannah</b><span>${i + 1} / ${N}</span></div>
+        <h3>${esc(st.t)}</h3>
+        <p id="hcTxt" data-full="${esc(txt)}"></p>
+        <div class="hc-bar"><i style="width:${Math.round((i + 1) / N * 100)}%"></i></div>
+        <div class="hc-b">${i > 0 ? `<button class="hc-back" data-hn="tourAtras" aria-label="Anterior">${ICON.left}</button>` : ''}<button class="btn" data-hn="tourSig">${st.end ? '¡Empezar a ahorrar!' : i === 0 ? '¡Vamos!' : 'Siguiente'}</button></div>
+      </div></div>`;
+  hnCoachPos(); hnEscribir(txt);
+  requestAnimationFrame(hnCoachPos);
+  const b = c.querySelector('[data-hn=tourSig]'); if (b && !matchMedia('(pointer: coarse)').matches) b.focus({ preventScroll: true });
+}
+function hnFijo(el) { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return true; } return false; }
+function hnCoachPos() {
+  if (!HN.tour) return;
+  const spot = $('#hcSpot'), box = $('#hcBox'); if (!spot || !box) return;
+  const el = HN.tour.el, vw = innerWidth, vh = innerHeight;
+  if (!el) { Object.assign(spot.style, { left: vw / 2 + 'px', top: vh * 0.3 + 'px', width: '0px', height: '0px' }); spot.classList.add('none'); box.className = 'hc-box mid'; return; }
+  spot.classList.remove('none');
+  const r = el.getBoundingClientRect(), p = 8;
+  let top = Math.max(6, r.top - p), left = Math.max(6, r.left - p), w = Math.min(vw - 12, r.width + p * 2), h = r.bottom + p - top;
+  if (h > vh * 0.45) h = vh * 0.45;
+  if (top + h > vh - 6) h = Math.max(30, vh - 6 - top);
+  Object.assign(spot.style, { left: left + 'px', top: top + 'px', width: w + 'px', height: h + 'px', borderRadius: Math.min(22, h / 2) + 'px' });
+  box.className = 'hc-box ' + (top + h / 2 > vh * 0.5 ? 'arriba' : 'abajo');
+  if (esDesk() && left < 260 && r.right < 260) box.classList.add('lado');
+}
+function hnEscribir(txt) {
+  const p = $('#hcTxt'); if (!p) return; clearInterval(HN.tw);
+  if (hnReduce() || HN.rapido) { p.textContent = txt; return; }
+  let k = 0; p.textContent = ''; p.classList.add('typing');
+  HN.tw = setInterval(() => { k += 2; p.textContent = txt.slice(0, k); if (k >= txt.length) { clearInterval(HN.tw); p.classList.remove('typing'); } }, 16);
+}
+function hnTxtCompleto() { const p = $('#hcTxt'); if (p && p.classList.contains('typing')) { clearInterval(HN.tw); p.textContent = p.dataset.full; p.classList.remove('typing'); return false; } return true; }
 function hnTourFin(felicitar) {
-  HN.tour = null; const el = $('#hnTour'); if (el) { el.hidden = true; el.innerHTML = ''; }
-  document.body.classList.remove('hn-touring'); document.querySelectorAll('.hn-spot').forEach(x => x.classList.remove('hn-spot'));
-  if (S.tab !== 'inicio') { S.tab = 'inicio'; render(); }
-  hnBtnVis();
-  if (felicitar) { hnAbrir(); hnSay([hnPose('celebra', 'Hannah celebrando'), '¡Terminaste el tour! 🎉 Ya conoces lo principal de la app.', 'Recuerda: lo más importante es <b>anotar cada gasto</b> apenas lo hagas. Si tienes cualquier duda, aquí estoy.'], [chip('Quiero ahorrar para algo', 'meta', 'meta', true), chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo'), chip('Preguntas frecuentes', 'temas', 'book')]); }
+  if (!HN.tour) return;
+  clearInterval(HN.tw); HN.tour = null;
+  removeEventListener('resize', hnCoachPos); removeEventListener('scroll', hnCoachPos);
+  const el = $('#hnTour'); if (el) { el.hidden = true; el.innerHTML = ''; }
+  document.body.classList.remove('hn-touring', 'hc-btn');
+  S.tab = 'inicio'; S.anim = true; render(); window.scrollTo(0, 0);
+  hnMarcarTutorial(); hnBtnVis();
+  if (felicitar) { hnAbrir(); hnSay([hnPose('celebra', 'Hannah celebrando'), '¡Terminaste el tutorial! 🎉 Ahora sí le vas a sacar el 100% a la app.', '¿Quieres que empecemos con algo? Puedo anotar un gasto por ti, decirte cuánto tienes hoy o armarte una meta.'], [chip('Registrar un gasto', 'reg', 'compras', true), chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo'), chip('Quiero ahorrar para algo', 'meta', 'meta')]); }
 }
+function hnMarcarTutorial() { if (S.cfg && !(S.cfg.hannah && S.cfg.hannah.tutorial)) { S.cfg.hannah = Object.assign({}, S.cfg.hannah, { tutorial: true }); saveCfg(); } }
 
 /* ---------- Temas, consejos, creador y acerca de ---------- */
 function hnTema(id) {
@@ -4276,6 +4406,139 @@ function hnNoEntiendo() {
   hnSay([esc(hnRand(H_KB.noEntiendo)), 'Recuerda que soy experta en <b>ahorro y en esta app</b>. Estas opciones te pueden servir:'], MENU());
 }
 
+/* ---------- Registrar gastos, ingresos y ahorros escribiéndole a Hannah ---------- */
+const HN_CAT_RE = [
+  ['bebe', /pampers|huggies|panal|panales|bebe|formula|alacta|wipes|toallitas/],
+  ['restaurantes', /restaurante|almuerzo|almorce|cena|cene|desayuno|desayune|pizza|hamburguesa|pica pollo|chimi|comida rapida|delivery|pedidos ya|pedidosya|uber eats|cafe\b|cafeteria|helado|picadera|sushi|kfc|burger|wendy/],
+  ['alimentacion', /super\b|supermercado|colmado|compra de comida|compras de comida|mercado|carniceria|frutas|viveres|la sirena|jumbo|nacional|bravo|ole\b|comida/],
+  ['vehiculo', /gasolina|combustible|gasoil|diesel|taller|mecanico|lavado|peaje|uber\b|didi|taxi|parqueo|gomas|aceite|repuesto|marbete|guagua|pasaje|carro/],
+  ['vivienda', /\bluz\b|energia|edesur|edenorte|edeeste|agua\b|alquiler|renta|internet|cable|celular|telefono|claro\b|altice|gas de cocina|tanque de gas|mantenimiento del apartamento|condominio/],
+  ['salud', /farmacia|medicina|medicamento|pastilla|doctor|medico|consulta|clinica|seguro medico|laboratorio|analisis|dentista|odontolog|terapia|optica|lentes/],
+  ['personal', /barberia|barbero|salon|recorte|pelo|unas|manicure|gimnasio|gym|ropa|zapatos|tenis|perfume|crema|maquillaje/],
+  ['entretenimiento', /cine|netflix|spotify|disney|hbo|youtube|salida|fiesta|bar\b|discoteca|juego|concierto|playa|teatro|bebida|cerveza|romo|tragos/],
+  ['educacion', /colegio|universidad|uni\b|curso|libro|matricula|clases|maestria|inscripcion|utiles/],
+  ['deudas', /prestamo|cuota|deuda/],
+  ['compras', /amazon|tienda|shein|temu|regalo|ebay|aliexpress|plaza|mall|compra/],
+];
+const HN_MESES_N = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const hnEsRegistro = s => !/^(cuanto|como|que|donde|cuando|por que|puedo|se puede)\b/.test(s) && !/\?/.test(s) &&
+  /\b(gaste|pague|compre|consumi|registra(r|me|lo)?|anota(r|me|lo)?|apunta(r|me|lo)?|agrega(r|me)?|ponme|pon\b|echale|eche|ahorre|aparte|guarde|deposite|me pagaron|cobre|recibi|me entraron|me dieron|me depositaron|vendi|gasto de|un gasto|un ahorro|un ingreso)\b/.test(s);
+function hnFechaDe(s) {
+  const h = new Date(); h.setHours(12, 0, 0, 0);
+  if (/\bantier\b|anteayer|antes de ayer/.test(s)) { h.setDate(h.getDate() - 2); return iso(h); }
+  if (/\bayer\b/.test(s)) { h.setDate(h.getDate() - 1); return iso(h); }
+  let m = s.match(/\b(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/);
+  if (m) { const mo = HN_MESES_N.indexOf(m[2]); let y = h.getFullYear(); if (mo > h.getMonth()) y--; return iso(new Date(y, mo, Math.min(+m[1], diasMes(y, mo)))); }
+  m = s.match(/\b(?:el|dia) (\d{1,2})\b(?! (pesos|mil|dolares|k\b))/);
+  if (m && +m[1] >= 1 && +m[1] <= 31) { let y = h.getFullYear(), mo = h.getMonth(); if (+m[1] > h.getDate()) { mo--; if (mo < 0) { mo = 11; y--; } } return iso(new Date(y, mo, Math.min(+m[1], diasMes(y, mo)))); }
+  return hoyISO();
+}
+function hnLimpiarMonto(s) {
+  return s.replace(/\b\d{1,2} de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/g, ' ')
+    .replace(/\b(el|dia) \d{1,2}\b(?! (pesos|mil|dolares|k\b))/g, ' ').replace(/\b(terminal|termina en|terminada en) \d{4}\b/g, ' ');
+}
+function hnRegParse(raw) {
+  const s = hnNorm(raw), d = { raw };
+  d.tipo = /ahorre|aparte|guarde|deposite en (mi|la) (cuenta de )?ahorro|un ahorro|para (mi|la) meta|para (el|mi) fondo/.test(s) ? 'ahorro'
+    : /me pagaron|cobre|recibi|me entraron|me dieron|me depositaron|vendi|un ingreso|ingreso de/.test(s) ? 'ingreso' : 'gasto';
+  const sm = hnLimpiarMonto(raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
+  d.monto = hnMonto(sm);
+  d.mon = /dolar|dolares|usd|us\$|\bus\b|\bdls\b/.test(s) ? 'US' : 'RD';
+  d.fecha = hnFechaDe(s);
+  // Método de pago: primero el nombre de una tarjeta o su terminal
+  const tcs = S.cfg.tarjetas.map(t => ({ t, n: hnNorm(t.n) })).filter(x => x.n);
+  let tc = tcs.filter(x => (' ' + s + ' ').includes(' ' + x.n + ' ') || (x.t.term && s.includes(x.t.term))).sort((a, b) => b.n.length - a.n.length);
+  if (!tc.length) tc = tcs.filter(x => { const base = x.n.replace(/\s*(rd|us|usd|dop)\$?$/, '').trim(); return base.length > 2 && (' ' + s + ' ').includes(' ' + base + ' '); });
+  if (tc.length) { const mismo = tc.find(x => x.t.mon === d.mon); d.metodo = (mismo || tc[0]).t.id; if (!mismo && tc[0].t.mon === 'US' && !/peso/.test(s)) d.mon = 'US'; }
+  else if (/efectivo|cash|en mano|\bcash\b/.test(s)) d.metodo = 'efectivo';
+  else if (/debito/.test(s)) d.metodo = 'debito';
+  else if (/transferencia|transferi|transfer\b/.test(s)) d.metodo = 'transferencia';
+  else if (/tarjeta|credito/.test(s) && S.cfg.tarjetas.length === 1) d.metodo = S.cfg.tarjetas[0].id;
+  else if (/tarjeta|credito/.test(s) && S.cfg.tarjetas.length > 1) d.pideTarjeta = true;
+  // Categoría (solo gastos): primero las del usuario por nombre, luego palabras clave
+  if (d.tipo === 'gasto') {
+    const propia = S.cfg.categorias.filter(c => c.n && (' ' + s + ' ').includes(' ' + hnNorm(c.n) + ' ')).sort((a, b) => b.n.length - a.n.length)[0];
+    if (propia) d.cat = propia.id;
+    else for (const [id, re] of HN_CAT_RE) if (re.test(s) && S.cfg.categorias.some(c => c.id === id)) { d.cat = id; break; }
+    // ¿Es el pago de un gasto fijo? (ej. "pagué la luz")
+    const fj = S.cfg.fijos.filter(f => f.n && hnNorm(f.n).length > 2 && s.includes(hnNorm(f.n)) && !M(mesDe(d.fecha)).movs.some(t => t.fijoId === f.id))[0];
+    if (fj && /pague|pago de|pagar/.test(s)) { d.fijoId = fj.id; d.cat = fj.cat; d.nota = fj.n; if (!d.monto) d.monto = fijoMonto(mesDe(d.fecha), fj); if (fj.mon && !/peso|dolar/.test(s)) d.mon = fj.mon; }
+  }
+  // Ahorro: meta o cuenta
+  if (d.tipo === 'ahorro') {
+    const tipo = hnTipoDe(s);
+    const meta = S.cfg.metas.find(m => m.n && s.includes(hnNorm(m.n))) || (tipo && S.cfg.metas.find(m => m.tipo === tipo || hnTipoDe(hnNorm(m.n)) === tipo)) || (/emergencia|imprevisto/.test(s) && S.cfg.metas.find(m => m.id === 'emergencia'));
+    const cta = cuentasA().find(c => c.n && s.includes(hnNorm(c.n)));
+    if (meta) d.metaId = meta.id; if (cta) d.cuentaId = cta.id;
+  }
+  // Nota: las palabras que describen el gasto (sin verbos, montos, fechas ni método de pago)
+  let w = raw.replace(/[¿?¡!,.;:"“”()]/g, ' ').split(/\s+/).filter(Boolean);
+  const quitarSec = toks => { for (let i = 0; i + toks.length <= w.length; i++) if (toks.every((t, k) => hnNorm(w[i + k]) === t)) { w.splice(i, toks.length); i--; } };
+  for (const t of S.cfg.tarjetas) if (t.n) quitarSec(hnNorm(t.n).split(' '));
+  const STOP = new Set('hannah por favor porfa pls registra registrar registrame registralo anota anotar anotame anotalo apunta apuntar apuntame agrega agregar agregame ponme pon echale eche gaste pague compre consumi ahorre aparte guarde deposite me pagaron cobre recibi entraron dieron depositaron vendi hoy ayer antier anteayer antes un una gasto ingreso ahorro de del en el la los las lo por con para mi mis que y efectivo cash debito transferencia transferi tarjeta credito pesos peso dolares dolar usd rd rd$ us us$ dls terminada termina terminal k mil millones usando pagado al a dia enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre'.split(' '));
+  w = w.filter(x => { const k = hnNorm(x); return k && !STOP.has(k) && !/^(rd|us)?\$?\d/.test(k); });
+  let n = w.join(' ').slice(0, 40);
+  if (!d.nota) d.nota = n ? (n[0].toUpperCase() + n.slice(1)).slice(0, 40) : '';
+  return d;
+}
+function hnRegistrar(raw) {
+  const d = hnRegParse(raw);
+  HN.flow = { k: 'reg', d };
+  return hnRegSig();
+}
+// Pide lo que falte y guarda
+function hnRegSig() {
+  const f = HN.flow, d = f.d;
+  const tl = d.tipo === 'ahorro' ? 'el ahorro' : d.tipo === 'ingreso' ? 'el ingreso' : 'el gasto';
+  if (!(d.monto > 0)) { f.paso = 'monto'; return hnSay(`¡Claro! ¿De cuánto fue ${tl}?`, [chip('Cancelar', 'menu')], { num: true, ph: 'Ej. 850' }); }
+  if (d.tipo === 'gasto' && !d.cat) { f.paso = 'cat'; return hnSay(`¿En qué fue ese gasto de ${money(d.monto, d.mon)}?`, [...S.cfg.categorias.map(c => chip(c.n, 'rcat:' + c.id, icC(c))), chip('Cancelar', 'menu')]); }
+  if (d.pideTarjeta) { f.paso = 'tc'; return hnSay('¿Con cuál tarjeta lo pagaste?', [...S.cfg.tarjetas.map(t => chip(t.n + (t.term ? ' ·' + t.term : ''), 'rmet:' + t.id, 'pago_tc')), chip('Efectivo', 'rmet:efectivo', 'efectivo'), chip('Débito', 'rmet:debito', 'bank')]); }
+  if (d.tipo === 'ahorro' && !d.metaId && !d.cuentaId) {
+    const ops = [...cuentasA().map(c => chip(c.n, 'rcta:' + c.id, c.ic || 'bank')), ...S.cfg.metas.map(m => chip(m.n, 'rmeta:' + m.id, m.ic || 'meta'))];
+    if (ops.length === 1) { const [k, id] = ops[0].cmd.split(':'); if (k === 'rcta') d.cuentaId = id; else d.metaId = id; }
+    else if (ops.length) { f.paso = 'dest'; return hnSay(`¿A dónde van esos ${money(d.monto, d.mon)}?`, [...ops, chip('Cancelar', 'menu')]); }
+    else d.metaId = 'emergencia';
+  }
+  return hnRegGuardar();
+}
+function hnRegGuardar() {
+  const d = HN.flow.d; HN.flow = null;
+  if (!d.metodo) { const last = allMovs().filter(x => x.tipo === 'gasto').sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))[0]; d.metodo = d.tipo === 'gasto' ? (last?.metodo || 'efectivo') : 'debito'; }
+  const t = { id: uid(), ts: new Date().toISOString(), fecha: d.fecha, tipo: d.tipo, monto: Math.round(d.monto * 100) / 100, mon: d.mon, metodo: d.metodo, nota: d.nota || '' };
+  if (d.tipo === 'gasto') t.cat = d.cat || 'otros';
+  if (d.fijoId) t.fijoId = d.fijoId;
+  if (d.metaId) t.metaId = d.metaId; if (d.cuentaId) t.cuentaId = d.cuentaId;
+  const mes = mesDe(t.fecha); M(mes).movs.push(t); saveMes(mes); render();
+  HN.ultimo = { id: t.id, mes };
+  const k = t.tipo === 'gasto' ? cat(t.cat) : null, met = metodo(t.metodo);
+  const meta = t.metaId && S.cfg.metas.find(m => m.id === t.metaId), cta = t.cuentaId && cuentasA().find(c => c.id === t.cuentaId);
+  const fila = (a, b) => `<div class="hn-kv"><span>${a}</span><b>${b}</b></div>`;
+  const ic = t.tipo === 'gasto' ? icC(k) : t.tipo === 'ahorro' ? 'ahorro' : 'ingreso', col = t.tipo === 'gasto' ? k.c : t.tipo === 'ahorro' ? '#0B7A55' : '#1E9E6A';
+  const card = `<div class="hn-reg">
+    <div class="row" style="gap:11px;align-items:center"><span class="hn-ic" style="background:${col};color:#fff">${svgI(ic, 20, 2)}</span>
+      <div class="grow"><div class="eyebrow">${t.tipo === 'gasto' ? 'Gasto anotado' : t.tipo === 'ahorro' ? 'Ahorro anotado' : 'Ingreso anotado'} ${svgI('check', 14, 2.4)}</div><b class="hn-reg-m ${t.tipo === 'gasto' ? 'neg' : 'pos'}">${t.tipo === 'gasto' ? '−' : '+'}${money(t.monto, t.mon)}</b></div></div>
+    ${t.nota ? fila('Nota', esc(t.nota)) : ''}
+    ${k ? fila('Categoría', esc(k.n)) : ''}
+    ${meta ? fila('Para la meta', esc(meta.n)) : ''}${cta ? fila('Cuenta', esc(cta.n)) : ''}
+    ${fila(t.tipo === 'ingreso' ? 'Llegó por' : 'Con', esc(met.n))}
+    ${fila('Fecha', t.fecha === hoyISO() ? 'Hoy' : esc(fechaCorta(parseISO(t.fecha))))}
+  </div>`;
+  const extra = [];
+  if (t.tipo === 'gasto' && k && num(k.tope) > 0) { const g = variablePorCat(mes, k.id); if (g > k.tope) extra.push(`⚠️ Ojo: en <b>${esc(k.n)}</b> ya vas por ${money(g)} este mes y tu tope es ${money(k.tope)}.`); else if (g > k.tope * 0.8) extra.push(`En <b>${esc(k.n)}</b> ya usaste el ${Math.round(g / k.tope * 100)}% de tu tope del mes.`); }
+  if (t.tipo === 'gasto' && mes === mesActual()) { const p = presupuestoDiario(); extra.push(p.diario >= 0 ? `Ahora puedes gastar <b>${money(p.diario)}</b> por día hasta tu próximo cobro.` : 'Con este gasto ya pasaste lo planificado para este tramo. Frena un poquito hasta tu próximo cobro. 💪'); }
+  if (t.tipo === 'ahorro' && meta && meta.obj > 0) { const ap = aportadoMeta(meta); extra.push(ap >= meta.obj ? `🎉 ¡Llegaste a tu meta <b>${esc(meta.n)}</b>!` : `¡Bien! Ya llevas ${money(ap)} de ${money(meta.obj)} (${Math.round(ap / meta.obj * 100)}%).`); }
+  hnSay([{ html: card, card: true }, ...extra],
+    [chip('Deshacer', 'regDeshacer', 'x'), chip('Editar', 'regEditar', 'wrench'), chip('Registrar otro', 'reg', 'plus', true), chip('Menú', 'menu', 'grid')]);
+}
+function hnRegCmd(k, v) {
+  const f = HN.flow; if (!f || f.k !== 'reg') return hnInicio();
+  if (k === 'rcat') f.d.cat = v;
+  if (k === 'rmet') { f.d.metodo = v; f.d.pideTarjeta = false; const t = tarjeta(v); if (t && t.mon === 'US' && !/peso/.test(hnNorm(f.d.raw))) f.d.mon = 'US'; }
+  if (k === 'rcta') f.d.cuentaId = v;
+  if (k === 'rmeta') f.d.metaId = v;
+  hnRegSig();
+}
+
 /* ---------- Entender lo que escribe el usuario ---------- */
 function hnBuscarTema(s) {
   let best = null, bs = 0;
@@ -4304,6 +4567,11 @@ function hnTexto(raw) {
   hnUser(t);
   const s = hnNorm(t), f = HN.flow;
   if (/^(menu|cancelar|salir|olvidalo|nada|volver)$/.test(s)) { HN.flow = null; return hnSay('Listo. ¿En qué más te ayudo?', MENU()); }
+  if (f && f.k === 'reg') {
+    if (f.paso === 'monto') { const v = hnMonto(t); if (v > 0) { f.d.monto = v; if (f.d.tipo === 'gasto' && !f.d.cat) { const d2 = hnRegParse(f.d.raw + ' ' + t); if (d2.cat) f.d.cat = d2.cat; } return hnRegSig(); } return hnSay('Escríbeme solo el monto, por ejemplo <b>850</b>.', [chip('Cancelar', 'menu')], { num: true, ph: 'Ej. 850' }); }
+    if (f.paso === 'cat') { const d2 = hnRegParse('gaste en ' + t); if (d2.cat) { f.d.cat = d2.cat; if (!f.d.nota) f.d.nota = t.slice(0, 40); return hnRegSig(); } }
+    HN.flow = null;
+  }
   if (f && f.k === 'meta') {
     if (f.paso === 'tipo') { const k = hnTipoDe(s); if (k || !/\?|cuanto|como|donde|que |quien/.test(s)) return hnMeta(k || 'otro'); HN.flow = null; }
     if (f.paso === 'precio' || f.paso === 'tengo') { const v = /^(nada|todavia nada|no|cero|ninguno)/.test(s) ? 0 : hnMonto(t); return hnMetaPaso(v); }
@@ -4319,6 +4587,7 @@ function hnTexto(raw) {
     }
     if (f.paso === 'emerg') { const n = parseInt(s, 10); if (n > 0 && n <= 24) { f.obj = f.precio * n; f.meses = null; return hnPlazo(); } }
   }
+  if (hnEsRegistro(s)) return hnRegistrar(t);
   if (/(quien|quienes) (te|lo|la) (creo|hizo|programo|desarrollo|diseno|invento)|quien es (tu|el|su) (creador|desarrollador|programador|autor|dueno)|tu creador|quien (creo|hizo|desarrollo|programo) (la|esta) (app|aplicacion)|quien (te )?creo|creador de (la|esta) app|^creador$/.test(s)) return hnCreador();
   if (/cuanto (dinero )?(tengo|me queda|hay)|dinero (tengo )?hoy|cuanto puedo gastar|tengo dinero|^saldo|como estoy|como voy|cuanto debo|mi deuda/.test(s)) return hnHoy();
   if (/^(hola|buenas|buenos dias|buen dia|hey|saludos|que tal|klk|dime)\b/.test(s) && s.split(' ').length <= 4) return hnSay(`¡${saludo()}${hnNombre() ? ', ' + esc(hnNombre()) : ''}! 😊 ¿En qué te ayudo?`, MENU());
@@ -4326,7 +4595,7 @@ function hnTexto(raw) {
   if (/^(adios|chao|bye|hasta luego|nos vemos)\b/.test(s)) return hnSay(esc(hnRand(H_KB.despedidas)));
   if (/quien eres|como te llamas|que eres|eres (un )?(robot|ia|humana|bot)|tu nombre/.test(s)) return hnQuienSoy();
   if (/version|acerca de|novedad|que hay de nuevo|actualizacion/.test(s)) return hnAcerca();
-  if (/tour|tutorial|ensen|recorrido|guia(me)?\b|como (se )?usa (la|esta) app|aprender a usar/.test(s)) return hnSay('¡Claro! Te llevo de paseo por la app. 🧭', [chip('Empezar el tour', 'tour', 'compass', true), chip('Mejor luego', 'menu')]);
+  if (/tour|tutorial|ensen|recorrido|guia(me)?\b|como (se )?usa (la|esta) app|aprender a usar/.test(s)) return hnSay('¡Claro! Te voy señalando cada parte de la app. 🧭 Lo puedes omitir cuando quieras.', [chip('Empezar el tutorial', 'tour', 'compass', true), chip('Mejor luego', 'menu')]);
   if (/consejo|tip\b|recomienda|recomendacion/.test(s)) return hnConsejo();
   const tipo = hnTipoDe(s);
   if (/\bmetas?\b.*(crear|nueva|tengo|quiero|ponerme|hacer)|(crear|nueva|quiero|ponerme|tengo) (una )?meta|ahorrar para|quiero ahorrar|juntar (dinero|cuartos|chelitos)?\s*para|quiero comprar(me)?/.test(s) || tipo && /ahorrar|comprar|quiero|juntar|sonando|meta/.test(s)) return hnMeta(tipo);
@@ -4379,13 +4648,20 @@ function hnCmd(c, label) {
     case 'act': return hnIr('act:' + v);
     case 'verMeta': hnCerrar(); return verMeta(v);
     case 'aportar': return hnIr('act:aportar:' + v);
-    case 'tourSig': if (!HN.tour) return; if (HN.tour.i >= H_KB.tour.length - 1) return hnTourFin(true); HN.tour.i++; return hnTourPaso();
-    case 'tourAtras': if (HN.tour && HN.tour.i > 0) { HN.tour.i--; hnTourPaso(); } return;
-    case 'tourSalir': { const ult = HN.tour && HN.tour.i >= H_KB.tour.length - 1; hnTourFin(ult); return; }
+    case 'tourSig': if (!HN.tour || !hnTxtCompleto()) return; if (HN.tour.i >= COACH.length - 1) return hnTourFin(true); HN.tour.i++; return hnTourPaso(1);
+    case 'tourAtras': if (HN.tour && HN.tour.i > 0) { HN.tour.i--; hnTourPaso(-1); } return;
+    case 'tourSalir': { const ult = HN.tour && HN.tour.i >= COACH.length - 1; hnTourFin(ult); return; }
+    case 'tutorial': closeSheet(); return hnTour();
+    case 'reg': habla(label); HN.flow = null; return hnSay(['¡Dale! Escríbeme el gasto como me lo dirías a mí. Por ejemplo:', '<span class="hn-ej">“Gasté 650 en el súper con efectivo”</span><span class="hn-ej">“Pagué la luz, 1,300”</span><span class="hn-ej">“Ahorré 2,000 para mi carro”</span><span class="hn-ej">“Me pagaron 5,000 de un incentivo”</span>'], [chip('Menú', 'menu', 'grid')], { ph: 'Ej. gasté 650 en el súper' });
+    case 'rcat': case 'rmet': case 'rcta': case 'rmeta': habla(label); return hnRegCmd(k, v);
+    case 'regDeshacer': { habla(label); const u = HN.ultimo; if (!u) return; const mm = M(u.mes), n0 = mm.movs.length; mm.movs = mm.movs.filter(x => x.id !== u.id); if (mm.movs.length < n0) { saveMes(u.mes); render(); HN.ultimo = null; return hnSay('Listo, lo borré. No pasó nada. 👍', [chip('Registrar otro', 'reg', 'plus', true), chip('Menú', 'menu', 'grid')]); } return hnSay('Ese movimiento ya no está.', MENU()); }
+    case 'regEditar': { const u = HN.ultimo; if (!u || !M(u.mes).movs.some(x => x.id === u.id)) return hnSay('Ese movimiento ya no está.', MENU()); hnCerrar(); return openMov({}, u.id, u.mes); }
   }
 }
 document.addEventListener('click', e => {
-  const el = e.target.closest('[data-hn]'); if (!el) return;
+  const el = e.target.closest('[data-hn]');
+  if (!el && HN.tour && e.target.closest('#hnTour')) { hnCmd('tourSig'); return; } // tocar en cualquier parte avanza
+  if (!el) return;
   e.preventDefault();
   const c = el.dataset.hn, enChat = el.classList.contains('hn-chip');
   if (enChat) { HN.chips = []; hnPintarChips(); }
@@ -4396,6 +4672,8 @@ document.addEventListener('submit', e => {
   e.preventDefault(); const i = $('#hnTxt'), t = i.value; i.value = ''; hnTexto(t);
 }, true);
 document.addEventListener('keydown', e => {
+  if (HN.tour && e.key === 'ArrowRight') { hnCmd('tourSig'); return; }
+  if (HN.tour && e.key === 'ArrowLeft') { hnCmd('tourAtras'); return; }
   if (e.key !== 'Escape') return;
   if (HN.tour) { hnTourFin(false); return; }
   if (HN.open && $('#sheetWrap').hidden) hnCerrar();
