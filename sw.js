@@ -1,6 +1,6 @@
 /* Ahorro Inteligente · service worker
    Cambia VERSION cada vez que subas cambios, para que el iPhone baje la versión nueva. */
-const VERSION = 'ahorro-2026-11-10-2';
+const VERSION = 'ahorro-2026-11-11-4';
 const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 const EXTERNOS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
 
@@ -30,4 +30,16 @@ self.addEventListener('fetch', e => {
     const red = fetch(req).then(r => { if (r && (r.ok || r.type === 'opaque')) c.put(req, r.clone()); return r; }).catch(() => hit);
     return hit || red;
   }));
+});
+
+// Consejo diario de Hannah (notificación push)
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
+  const title = d.title || '💡 Consejo de Hannah';
+  e.waitUntil(self.registration.showNotification(title, { body: d.body || 'Abre la app y mira tu consejo de hoy.', icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: d.tag || 'hannah-consejo', data: { url: d.url || './' } }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => { for (const w of ws) { if ('focus' in w) { w.focus(); return; } } return self.clients.openWindow(url); }));
 });

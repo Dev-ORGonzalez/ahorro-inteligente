@@ -94,3 +94,18 @@ Sube el `index.html` nuevo y, en `sw.js`, cambia la línea `const VERSION = 'aho
 - **El código del correo** vence en 1 hora y se puede pedir uno nuevo cada 60 segundos.
 - **Privacidad**: ningún usuario puede ver los datos de otro desde la app. Tú, como dueño del proyecto, sí podrías verlos en el Dashboard de Supabase; si la compartes con otras personas, díselo.
 - **Cerrar sesión** borra la copia del dispositivo (tus datos quedan en la cuenta). Si cierras sesión sin internet, pierdes lo que no se haya subido; la app te avisa antes.
+
+---
+
+## Consejo diario de Hannah por notificación (10:00 a. m.)
+
+Se configura una sola vez en Supabase. Necesitas 3 archivos que te pasa Claude: `notificaciones.sql`, `index.ts` y `SECRETOS-no-compartir.txt`.
+**Ninguno de esos tres va en este repositorio** (el `.sql` y el `.txt` tienen claves privadas).
+
+1. **SQL Editor → New query**: pega `notificaciones.sql` y toca **Run**. Crea la tabla `push_subs` (cada usuario solo ve lo suyo) y programa el envío diario a las 14:00 UTC (10:00 a. m. en RD).
+2. **Edge Functions → Deploy a new function → Via Editor**: nombre `consejo-diario`, borra el ejemplo, pega `index.ts` y toca **Deploy function**.
+3. En esa función → **Details/Settings**: apaga **Verify JWT** (la protege el `CRON_SECRET`).
+4. **Edge Functions → Secrets → Add new secret**: agrega `VAPID_PUBLIC`, `VAPID_PRIVATE` y `CRON_SECRET` con los valores del archivo de secretos.
+5. En el iPhone (app instalada en la pantalla de inicio, iOS 16.4 o más): **Ajustes → Consejo diario de Hannah → activar → Permitir**. Llega una notificación de prueba al instante.
+
+Para probar el envío sin esperar a las 10:00, corre en el SQL Editor la misma línea `select net.http_post(...)` que está dentro de `notificaciones.sql` (sin el `cron.schedule`). Para ver el resultado: `select status_code, content from net._http_response order by id desc limit 1;`
