@@ -705,6 +705,26 @@ body.hn-on .saved{top:calc(14px + env(safe-area-inset-top,0px));bottom:auto}
 .sw.on i{transform:translateX(20px)}
 .hn-burb{left:auto;margin:0;width:min(420px,calc(100vw - 24px))}
 @media (min-width: 1000px){.hn-burb{width:380px}}
+/* v1.6.0 gastos por partes */
+.check.part{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.check small{font-size:10.5px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.pt-txt{display:block}
+.pt-bar{display:block;height:5px;border-radius:99px;background:var(--line);margin:5px 0 3px;max-width:220px;overflow:hidden}
+.pt-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+.pt-cnt{display:block;font-weight:600;color:var(--ink)}
+.pt-form{display:flex;flex-direction:column;gap:10px}
+.pt-seg{flex-wrap:wrap}
+.pt-seg button{flex:1 1 40%}
+.pt-campos{display:flex;flex-direction:column;gap:10px}
+.pt-form:not(.partes) .pt-campos{display:none}
+.pt-form:not([data-f=semana]) .pt-dia{display:none}
+.pt-form:not([data-f=veces]) .pt-veces{display:none}
+.pt-prev:empty{display:none}
+.pt-prev{padding:11px 13px;border-radius:14px;background:var(--accent-soft);font-size:14px;line-height:1.5}
+.hn-sab{display:block;color:var(--accent);font-size:13.5px;margin-bottom:2px}
+.hn-burb .hn-sab{font-size:13px}
+.item .s .pt-txt,.item .s .pt-cnt{white-space:normal;overflow:visible}
+.item .s:has(.pt-txt){white-space:normal;overflow:visible;text-overflow:clip}
 /* ===== Modo Navidad (html.navidad, lo activa navidad.js solo en diciembre) =====
    Rojo navideño para la marca y los botones; el verde (--accent) se queda como color de "positivo/ingreso"
    para no cambiar el significado de los montos. */
@@ -1107,9 +1127,9 @@ function migrate(c) {
 
 /* ============ Cálculos ============ */
 function ingresoDe(m, i) { const o = M(m).ing?.[i.id]; return o != null ? o : i.m; }
-function fijoMonto(m, f) { const o = M(m).fx?.[f.id]; return o != null ? o : f.m; }
+function fijoMonto(m, f) { const o = M(m).fx?.[f.id]; return o != null ? o : esPartes(f) ? Math.round(num(f.parte) * partesDelMes(m, f) * 100) / 100 : f.m; }
 const fijoRD = (m, f) => toRD(fijoMonto(m, f), f.mon);
-function fijoMov(m, fid) { return M(m).movs.find(t => t.fijoId === fid); }
+function fijoMov(m, fid) { const f = S.cfg.fijos.find(x => x.id === fid); if (f && esPartes(f)) { const l = fijoPagos(m, fid); return fijoCompleto(m, f) ? l[l.length - 1] : undefined; } return M(m).movs.find(t => t.fijoId === fid); }
 
 function resumen(m) {
   const cfg = S.cfg, mm = M(m), movs = mm.movs;
@@ -1121,6 +1141,7 @@ function resumen(m) {
   for (const f of cfg.fijos) {
     const p = fijoRD(m, f); fijosPlan += p;
     if (p > 0) nFijos++;
+    if (esPartes(f)) { const pg = fijoPagadoRD(m, f); fijosPagados += pg; fijosReal += Math.max(p, pg); if (fijoCompleto(m, f)) nPag++; continue; }
     const mv = fijoMov(m, f.id);
     if (mv) { const r = toRD(mv.monto, mv.mon); fijosReal += r; fijosPagados += r; nPag++; } else fijosReal += p;
   }
@@ -1636,12 +1657,12 @@ function panelFijos(m) {
       ${g.tc && g.tc.pago ? `<div class="tiny muted" style="padding:0 16px 6px">Estos cargos los pagas desde tu cuenta al pagar la tarjeta: día <b style="color:var(--bad)">${g.tc.pago}</b>${cy && cy.pagoProx ? ` (próximo límite ${fechaCorta(cy.pagoProx)})` : ''}.</div>` : ''}
       ${g.sin ? `<div class="tiny muted" style="padding:0 16px 6px">Toca uno y elige con qué lo pagas normalmente.</div>` : ''}
       <div class="list">${g.items.map(f => {
-        const mv = fijoMov(m, f.id), fm = fijoMonto(m, f), ov = M(m).fx?.[f.id] != null, col = cat(f.cat).c;
+        const mv = fijoMov(m, f.id), fm = fijoMonto(m, f), ov = M(m).fx?.[f.id] != null, col = cat(f.cat).c, pt = esPartes(f), npg = pt ? fijoPagos(m, f.id).length : 0;
         return `<div class="item" style="${fm == 0 && !mv ? 'opacity:.6' : ''}">
-          <button class="check ${mv ? 'on' : ''} ${S.pop === f.id ? 'pop' : ''}" data-act="pagarFijo" data-id="${f.id}" aria-label="${mv ? 'Desmarcar' : 'Marcar pagado'} ${esc(f.n)}">${mv ? ICON.ok : ''}</button>
+          <button class="check ${mv ? 'on' : ''} ${pt && !mv && npg ? 'part' : ''} ${S.pop === f.id ? 'pop' : ''}" data-act="pagarFijo" data-id="${f.id}" aria-label="${pt ? (mv ? 'Quitar el último pago de' : 'Anotar un pago de') : mv ? 'Desmarcar' : 'Marcar pagado'} ${esc(f.n)}">${mv ? ICON.ok : pt && npg ? `<small>${npg}/${partesDelMes(m, f)}</small>` : ''}</button>
           <button class="grow" data-act="editFijo" data-id="${f.id}" style="border:0;background:none;text-align:left;padding:0;min-width:0">
-            <div class="row" style="gap:8px"><span style="color:${col};display:grid;flex:none">${svgI(icF(f), 17, 2)}</span><div class="t">${esc(f.n)}</div></div>${prestFijoLinea(f)}<div class="s">${mv ? 'Pagado con ' + esc(metodo(mv.metodo).n) + ' · ' + fechaCorta(parseISO(mv.fecha)) : (fm == 0 ? 'Toca el monto para ponerle uno' : f.dia ? 'Vence el día ' + f.dia : 'Pendiente')}${ov && !mv ? ' · ajustado este mes' : ''}${!mv && !porTC ? ' ' + mChip(f.metodo) : ''}${porTC ? ' · ' + esc(cat(f.cat).n) : ''}</div></button>
-          <div class="num right">${mv ? `<button class="amt-btn" data-act="editMov" data-id="${mv.id}" data-m="${mesDe(mv.fecha)}">${money(mv.monto, mv.mon)}${svgI('pencil', 13, 2)}</button>` : `<button class="amt-btn" data-act="montoFijo" data-id="${f.id}">${money(fm, f.mon)}${svgI('pencil', 13, 2)}</button>`}${f.mon === 'US' ? `<div class="tiny muted">${money(toRD(mv ? mv.monto : fm, 'US'))}</div>` : ''}</div>
+            <div class="row" style="gap:8px"><span style="color:${col};display:grid;flex:none">${svgI(icF(f), 17, 2)}</span><div class="t">${esc(f.n)}</div></div>${prestFijoLinea(f)}<div class="s">${pt ? partesTxt(m, f) : mv ? 'Pagado con ' + esc(metodo(mv.metodo).n) + ' · ' + fechaCorta(parseISO(mv.fecha)) : (fm == 0 ? 'Toca el monto para ponerle uno' : f.dia ? 'Vence el día ' + f.dia : 'Pendiente')}${ov && !mv ? ' · ajustado este mes' : ''}${!mv && !porTC ? ' ' + mChip(f.metodo) : ''}${porTC ? ' · ' + esc(cat(f.cat).n) : ''}</div></button>
+          <div class="num right">${mv && !pt ? `<button class="amt-btn" data-act="editMov" data-id="${mv.id}" data-m="${mesDe(mv.fecha)}">${money(mv.monto, mv.mon)}${svgI('pencil', 13, 2)}</button>` : `<button class="amt-btn" data-act="montoFijo" data-id="${f.id}">${money(fm, f.mon)}${svgI('pencil', 13, 2)}</button>`}${f.mon === 'US' ? `<div class="tiny muted">${money(toRD(mv ? mv.monto : fm, 'US'))}</div>` : ''}</div>
         </div>`;
       }).join('')}
       <div class="item sub"><div class="grow small muted">Total ${porTC ? 'cargado a ' + esc(g.n) : 'gastos de ' + esc(g.n.toLowerCase())}</div><b class="num small">${money(tot)}</b></div></div>
@@ -1852,7 +1873,7 @@ function verMeta(id) {
 /* Formularios específicos */
 const CAT_OPTS = () => S.cfg.categorias.map(c => ({ v: c.id, n: c.n }));
 const MON_OPTS = [{ v: 'RD', n: 'Pesos (RD$)' }, { v: 'US', n: 'Dólares (US$)' }];
-function formFijo(id) {
+function formFijoV1(id) {
   const f = id ? S.cfg.fijos.find(x => x.id === id) : null;
   openForm({ title: f ? 'Editar gasto fijo' : 'Nuevo gasto fijo', values: f || { cat: 'vivienda', mon: 'RD' },
     fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Alquiler' }, { k: 'm', label: 'Monto mensual normal', type: 'num' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'cat', label: 'Reglón', type: 'select', options: CAT_OPTS() }, { k: 'dia', label: 'Día de pago (para recordatorio y proyección)', type: 'num', ph: 'Ej. 30' }, { k: 'metodo', label: '¿Con qué lo pagas normalmente?', type: 'select', options: metOpts() }, { k: 'term', label: 'Terminal del préstamo (si es una cuota) · se conecta solo', ph: 'Ej. 7710' }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'otros' }],
@@ -2876,14 +2897,14 @@ function agendaItems(dias = 15) {
   for (let k = 0; k <= 1; k++) {
     const base = new Date(hoy.getFullYear(), hoy.getMonth() + k, 1), m = mesDe(iso(base)), mm = S.months[m] || {};
     for (const f of S.cfg.fijos) {
-      if (!f.dia || tarjeta(f.metodo) || (mm.movs || []).some(t => t.fijoId === f.id)) continue;
+      if (!f.dia || tarjeta(f.metodo) || (esPartes(f) ? fijoCompleto(m, f) || f.freq === 'semana' : (mm.movs || []).some(t => t.fijoId === f.id))) continue;
       const monto = mm.fx?.[f.id] ?? f.m; if (!(num(monto) > 0)) continue;
       const d = fechaDia(base.getFullYear(), base.getMonth(), f.dia);
       if (dentro(d)) add({ fecha: d, k: 'fijo', t: f.n, s: 'Gasto fijo' + (metValido(f.metodo) ? ' · con ' + metodo(f.metodo).n : '') + (f.mon === 'US' ? ' · ' + money(num(monto), 'US') : ''), monto: toRD(num(monto), f.mon), c: cat(f.cat).c, ic: icF(f), act: k === 0 && S.mes === mesActual() ? 'pagarFijo' : '', id: f.id });
     }
     for (const i of cobros()) { const d = fechaDia(base.getFullYear(), base.getMonth(), i.dia); if (dentro(d)) add({ fecha: d, k: 'cobro', t: 'Cobro: ' + i.n, monto: mm.ing?.[i.id] ?? i.m, c: '#0B7A55', ic: i.ic || 'ingreso', ingreso: true, id: i.id }); }
   }
-  agendaCobrar(dentro, add);
+  agendaCobrar(dentro, add); agendaPartes(dentro, add);
   const ord = { pago: 0, fijo: 1, corte: 2, cobro: 3 };
   return out.sort((a, b) => a.fecha - b.fecha || ord[a.k] - ord[b.k]);
 }
@@ -4695,9 +4716,10 @@ const H_FRASES = [
 ];
 
 /* ============ Hannah · asistente de ahorro (funciona dentro de la app, sin internet ni costo) ============ */
-const APP_VER = '1.5.0';
+const APP_VER = '1.6.0';
 const APP_FECHA = 'Noviembre 2026';
 const NOVEDADES = [
+  { v: '1.6.0', f: 'Noviembre 2026', items: ['Gastos fijos que pagas por partes: cada semana, cada quincena o varias veces al mes (ej. peluquería RD$450 cada sábado)', 'La app calcula sola si el mes trae 4 o 5 semanas y vas marcando cada pago', '“¿Sabías que puedes…?”: Hannah te enseña la app poco a poco, sin saturarte', 'Tutorial nuevo y completo, por capítulos: desde cómo te avisa hasta cada función', 'Montos siempre con centavos exactos y préstamos conectados a su cuota por terminal'] },
   { v: '1.5.0', f: 'Noviembre 2026', items: ['Hannah te acompaña: te celebra cuando vas bien con el ahorro y te frena con cariño cuando te pasas', 'Consejo diario de Hannah como notificación a las 10:00 a. m. (lo activas o apagas en Ajustes)', 'Avisos de días feriados de República Dominicana, un día antes y el mismo día', 'Modo Navidad automático en diciembre, con Hannah de gorrito', 'Acerca de más simple: solo las últimas novedades'] },
   { v: '1.4.0', f: 'Noviembre 2026', items: ['Préstamos con tasa de interés: ves cuánto debes exacto cada día y el interés de hoy y de mañana', 'La cuota del gasto fijo y el préstamo ahora están conectados: pagas en un lado y baja en el otro', 'Préstamos de bancos y de personas separados, con terminal y totales', 'Nueva sección “Me deben”: anota quién te debe y te recuerdo el día que te paga', 'Hannah más lista: responde preguntas abiertas con tus datos, consejo del día, libros y frases'] },
   { v: '1.3.0', f: 'Noviembre 2026', items: ['Hannah anota por ti: escríbele “gasté 500 en comida con efectivo” o “ahorré 2,000 para mi carro” y queda registrado', 'Nuevo tutorial guiado: Hannah te señala cada parte de la app (Ajustes → Tutorial)', 'Botón de Hannah renovado'] },
@@ -4838,12 +4860,12 @@ function hnUser(t) { hnAdd({ who: 'u', html: esc(t) }); }
 const chip = (t, cmd, ic, main) => ({ t, cmd, ic, main });
 const hnPose = (k, alt) => ({ html: `<div class="hn-pose ${k === 'explica' || k === 'saluda' ? 'cut' : ''}"><img src="${HANNAH_IMG[k] || HANNAH_IMG.explica}" alt="${esc(alt || 'Hannah')}"></div>`, card: true });
 const hnGo = (t, cmd) => `<button class="hn-go" data-hn="${esc(cmd)}">${esc(t)}${ICON.right}</button>`;
-const MENU = () => [chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo', true), chip('Registrar un gasto', 'reg', 'compras'), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Tutorial de la app', 'tour', 'compass'), chip('Libros y frases', 'libros', 'book'), chip('Dame un consejo', 'consejo', 'sparkle'), chip('Preguntas frecuentes', 'temas', 'book'), chip('Acerca de la app', 'acerca', 'info')];
+const MENU = () => [chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo', true), chip('Registrar un gasto', 'reg', 'compras'), chip('Quiero ahorrar para algo', 'meta', 'meta'), chip('Tutorial de la app', 'tour', 'compass'), chip('Libros y frases', 'libros', 'book'), chip('¿Qué más puedes hacer?', 'sabias', 'sparkle'), chip('Dame un consejo', 'consejo', 'sparkle'), chip('Preguntas frecuentes', 'temas', 'book'), chip('Acerca de la app', 'acerca', 'info')];
 
 function hnInicio() {
   const n = hnNombre();
   const fer = hnAviso(), nav = typeof navidadSaludo === 'function' ? navidadSaludo() : '', est = hnEstadoAhorro();
-  hnSay([`${saludo()}${n ? ', <b>' + esc(n) + '</b>' : ''} 👋 Soy <b>Hannah</b>, tu asistente de ahorro.`, ...(fer ? [esc(fer.texto)] : nav ? [esc(nav)] : []), ...(est ? [esc(est.txt)] : []), `💡 <b>Consejo de hoy:</b> ${esc(hnConsejoHoy())}`, '¿En qué te ayudo? Toca una opción o pregúntame lo que quieras con tus palabras: “¿cuánto gasté en comida?”, “¿quién me debe?”, “¿qué es el interés compuesto?”…'], MENU());
+  hnSay([`${saludo()}${n ? ', <b>' + esc(n) + '</b>' : ''} 👋 Soy <b>Hannah</b>, tu asistente de ahorro.`, ...(fer ? [esc(fer.texto)] : nav ? [esc(nav)] : []), ...(est ? [esc(est.txt)] : []), `💡 <b>Consejo de hoy:</b> ${esc(hnConsejoHoy())}`, ...(() => { if (!hnSabiasToca()) return []; const x = hnSabiasSig(); if (!x) return []; hnSabiasMarcar(x.id); HN.sabChip = chip(x.b, hnSabiasCmd(x), 'sparkle'); return [`<b class="hn-sab">¿Sabías que puedes…</b> ${esc(x.t)}`]; })(), '¿En qué te ayudo? Toca una opción o pregúntame lo que quieras con tus palabras: “¿cuánto gasté en comida?”, “¿quién me debe?”, “¿qué es el interés compuesto?”…'], HN.sabChip ? [HN.sabChip, ...MENU()] : MENU()); HN.sabChip = null;
 }
 
 /* ---------- Bienvenidas (una sola vez) ---------- */
@@ -5007,33 +5029,50 @@ function hnCrearMeta() {
 const hnSec = (txt, sel = '#view section') => [...document.querySelectorAll(sel)].find(e => { const h = e.querySelector('h2,h3,.eyebrow'); return h && h.textContent.trim().toLowerCase().startsWith(txt.toLowerCase()); });
 const hnTabBtn = v => document.querySelector(`#tabs [data-act=tab][data-v="${v}"]`);
 const hnVis = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+const hnPanelDe = txt => [...document.querySelectorAll('#sheet .panel')].find(e => { const h = e.querySelector('h3'); return h && h.textContent.trim().startsWith(txt); });
+const hnPrimerPartes = () => { const f = S.cfg.fijos.find(x => esPartes(x)); return f ? $(`#view button.check[data-id="${f.id}"]`)?.closest('.item') : null; };
 const COACH = [
-  { pose: 'saluda', t: '¡Bienvenido al tutorial!', x: () => `¡Hola${hnNombre() ? ', ' + hnNombre() : ''}! Soy Hannah y en unos minutos te enseño toda la app, de pie a cabeza. Yo te voy señalando cada parte; tú solo toca Siguiente. Si ya la conoces, puedes omitir el tutorial cuando quieras.` },
-  { tab: 'inicio', el: () => $('#view section.note'), pose: 'explica', t: () => document.documentElement.classList.contains('navidad') ? 'Tu billete navideño' : 'Tu billete verde', x: 'Este es el número más importante: lo que te queda para ahorrar este mes. Es lo que entra, menos tus gastos fijos y lo que gastas en el día a día. Mientras más grande, mejor vas.' },
-  { tab: 'inicio', el: () => $('#view section.daily'), pose: 'explica', t: 'Puedes gastar hoy', x: 'Aquí te digo cuánto puedes gastar por día hasta tu próximo cobro, ya con tus fijos y tu ahorro separados. Si lo respetas, llegas al cobro sin apuros.' },
-  { tab: 'inicio', el: () => $('#view header .month'), pose: 'piensa', t: 'Cambia de mes', x: 'Con estas flechas viajas entre meses para ver cómo te fue antes o planificar el que viene.' },
-  { tab: 'inicio', el: () => $('#view header [data-act=tema]'), pose: 'explica', t: 'Modo claro u oscuro', x: 'Toca la luna o el sol para cambiar los colores de la app. De noche, el modo oscuro descansa la vista.' },
-  { tab: 'inicio', el: () => $('#view header [data-act=ajustes]'), pose: 'anota', t: 'Ajustes', x: 'En el engranaje están tus Ajustes: tu nombre, la tasa del dólar, cuánto quieres ahorrar, el respaldo de tus datos, Excel, recordatorios en el Calendario y este mismo tutorial.' },
-  { tab: 'inicio', el: () => hnSec('Mis gastos fijos'), pose: 'anota', t: 'Tus gastos fijos', x: 'Aquí ves los gastos de cada mes: alquiler, luz, internet, préstamos… Cuando pagues uno, márcalo y yo lo descuento. Si este mes fue distinto, toca el monto y cámbialo.' },
-  { el: () => document.querySelector('.fab'), pose: 'anota', t: 'Registra cada gasto', x: 'Este botón es tu mejor amigo. Cada vez que gastes, tócalo y anota el monto, la categoría y con qué pagaste. Toma segundos y así tus números siempre dicen la verdad.' },
-  { el: () => $('#hnBtn'), btn: true, pose: 'saluda', t: 'Pídemelo a mí', x: 'Y si te da pereza, escríbeme. Por ejemplo: “gasté 500 en comida con efectivo” o “ahorré 2,000 para mi carro”, y yo lo anoto por ti. También te digo cuánto dinero tienes hoy y te ayudo con tus metas.' },
-  { tab: 'movs', el: () => hnTabBtn('movs'), pose: 'explica', t: 'Movimientos', x: 'En Movimientos está todo lo que has anotado, día por día.' },
-  { tab: 'movs', el: () => $('#view .search'), pose: 'piensa', t: 'Busca lo que sea', x: 'Escribe una nota, una categoría o el nombre de una tarjeta y lo encuentras al instante.' },
-  { tab: 'movs', el: () => $('#view .hscroll'), pose: 'explica', t: 'Filtra por tarjeta o categoría', x: 'Toca un filtro para ver solo lo que pagaste con una tarjeta, en efectivo o en una categoría. Así descubres en qué se te va el dinero.' },
-  { tab: 'tarjetas', el: () => hnTabBtn('tarjetas'), pose: 'explica', t: 'Tus tarjetas', x: 'En Tarjetas controlas tus tarjetas de crédito y tus préstamos.' },
-  { tab: 'tarjetas', el: () => $('#view .tiles'), pose: 'piensa', t: 'Lo que debes', x: 'Aquí ves cuánto debes en total en tus tarjetas y cuánto crédito estás usando. Lo sano es no pasar del 30% del límite.' },
-  { tab: 'tarjetas', el: () => $('#view .cc'), pose: 'explica', t: 'Corte y pago', x: 'Cada tarjeta te muestra su saldo. El día verde es el corte y el rojo es la fecha límite para pagar sin intereses. Tócala para registrar un pago o ajustar su saldo.' },
-  { tab: 'tarjetas', el: () => $('#prBancos'), pose: 'piensa', t: 'Préstamos con interés', x: 'Aquí están tus préstamos de bancos y, aparte, lo que le debes a personas. Ponle la tasa a cada préstamo y te digo cuánto debes exacto hoy y cuánto interés se genera cada día. Si conectas su cuota fija, al pagarla en Inicio baja aquí solito.' },
-  { tab: 'tarjetas', el: () => $('#prCobrar'), pose: 'anota', t: '¿Quién te debe?', x: 'Si le prestas a alguien, anótalo aquí con la fecha en que te paga. Ese día te lo recuerdo y hasta te ayudo a escribirle por WhatsApp.' },
-  { tab: 'plan', el: () => hnTabBtn('plan'), pose: 'anota', t: 'Tu plan', x: 'En Plan organizas tu dinero: tus ingresos, tus gastos fijos y tus topes.' },
-  { tab: 'plan', el: () => $('#view .seg'), pose: 'explica', t: 'Cuatro secciones', x: 'Aquí cambias entre Fijos, Extras (incentivos, bonos y ventas), Proyección (cómo te irá) y Ahorro (dónde guardas tu dinero y tus metas).' },
-  { tab: 'extras', el: () => $('#view .tiles') || $('#view .chips'), pose: 'ahorra', t: 'Dinero extra', x: 'En Extras anotas lo que entra sin día fijo: incentivos, ventas, bonos. Márcalo como seguro o posible y toca “¿Llegó?” cuando lo recibas.' },
-  { tab: 'extras', el: () => $('#view .xmas'), pose: 'celebra', t: 'Tu doble sueldo', x: 'Aquí está la calculadora del bono navideño y el vacacional, para que planifiques en qué usarlo antes de que llegue.' },
-  { tab: 'proy', el: () => hnSec('Gastos que se exceden') || hnSec('Tu mes en números'), pose: 'piensa', t: 'Lo que debes vigilar', x: 'En Proyección te aviso qué gastos se están pasando y qué hacer para corregirlo a tiempo.' },
-  { tab: 'proy', el: () => hnSec('Simulador'), pose: 'piensa', t: 'Simulador', x: '¿Y si recortas el delivery o una suscripción? Pruébalo aquí y te digo cuánto ahorrarías en un año.' },
-  { tab: 'ahorro', el: () => $('#view .save-hero'), pose: 'ahorra', t: 'Mis ahorros', x: 'Aquí anotas dónde tienes tu dinero guardado y ves cómo crece mes a mes. Registra cada depósito o retiro.' },
-  { tab: 'ahorro', el: () => hnSec('Mis metas') || hnSec('Metas') || $('#view section.note'), pose: 'ahorra', t: 'Tus metas', x: 'Crea metas para un carro, una casa o un viaje. Si me dices “quiero ahorrar para…”, yo te armo el plan y te digo cuánto apartar cada mes.' },
-  { pose: 'celebra', end: true, t: '¡Ya eres experto!', x: 'Eso es todo. Ya conoces la app de pie a cabeza. Lo más importante: anota cada gasto y separa tu ahorro el día que cobras. Puedes repetir este tutorial en Ajustes cuando quieras. ¡A ahorrar!' },
+  // Capítulo 1 · Inicio
+  { cap: 'Bienvenida', pose: 'saluda', t: '¡Bienvenido al tutorial!', x: () => `¡Hola${hnNombre() ? ', ' + hnNombre() : ''}! Soy Hannah. En unos minutos te enseño todo lo que puede hacer la app: cómo se usa y cómo te voy avisando. Toca Siguiente o cualquier parte de la pantalla. Si ya la conoces, puedes omitirlo cuando quieras.` },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view section.note'), pose: 'explica', t: () => document.documentElement.classList.contains('navidad') ? 'Tu billete navideño' : 'Tu billete verde', x: 'El número más importante: lo que te queda para ahorrar este mes. Es lo que entra, menos tus gastos fijos y lo del día a día. Mientras más grande, mejor vas.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view section.daily'), pose: 'explica', t: 'Puedes gastar hoy', x: 'Te digo cuánto puedes gastar por día hasta tu próximo cobro, con tus fijos y tu ahorro ya separados. Si lo respetas, llegas al cobro sin apuros.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view .hn-fer') || $('#view .hn-animo'), pose: 'celebra', t: 'Te aviso cómo vas', x: 'Aquí te escribo cuando vas bien con tu ahorro, cuando te falta poquito o cuando hay que apretar. También te aviso los días feriados de República Dominicana: el día antes y el mismo día.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view .hn-tip-dia'), pose: 'piensa', t: 'Tu consejo del día', x: 'Cada día te dejo un consejo corto y una frase para motivarte. Si activas las notificaciones en Ajustes, te llega al celular a las 10:00 de la mañana.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view header .month'), pose: 'piensa', t: 'Cambia de mes', x: 'Con estas flechas viajas entre meses: mira cómo te fue antes o planifica el que viene.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view header [data-act=tema]'), pose: 'explica', t: 'Claro u oscuro', x: 'La luna o el sol cambian los colores. Y en diciembre la app se viste de Navidad sola. 🎄' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => hnSec('Mis gastos fijos'), pose: 'anota', t: 'Tus gastos fijos', x: 'Los gastos de cada mes: alquiler, luz, cuotas… Cuando pagues uno, toca su cuadrito y yo lo descuento. Si este mes fue distinto, toca el monto y cámbialo solo por este mes.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => hnPrimerPartes(), pose: 'anota', t: 'Gastos que pagas por partes', x: 'Algunos gastos se pagan por partes, como la peluquería cada sábado. Al editar un fijo, elige “Cada semana”, “Cada quincena” o “Varias veces”: yo calculo si el mes trae 4 o 5 semanas y vas marcando cada pago (2 de 4, 3 de 4…).' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => hnSec('Próximos 15 días'), pose: 'piensa', t: 'Lo que viene', x: 'Tus próximos cortes, pagos, cobros y quién te debe pagar, en orden. Con “Al calendario” los pones en el Calendario del iPhone con alarma.' },
+  // Capítulo 2 · Registrar
+  { cap: '2 · Anotar es la clave', el: () => document.querySelector('.fab'), pose: 'anota', t: 'Registra cada gasto', x: 'Cada vez que gastes, toca este botón: monto, categoría y con qué pagaste. Toma segundos, y así tus números siempre dicen la verdad.' },
+  { cap: '2 · Anotar es la clave', el: () => $('#hnBtn'), btn: true, pose: 'saluda', t: 'O pídemelo a mí', x: 'Escríbeme como hablas: “gasté 650 en el súper con efectivo”, “abone 5,000 al Popular” o “Emilio me debe 1,000 y me paga el 30”. Yo lo anoto, y puedes deshacerlo si me equivoco.' },
+  { cap: '2 · Anotar es la clave', pose: 'explica', t: 'Pregúntame lo que quieras', x: 'También respondo con tus datos: “¿cuánto gasté en comida?”, “¿qué tarjeta debo más?”, “¿cuánto interés pago al día?”, “¿cuándo es el próximo feriado?”. Y de finanzas: deudas, invertir, interés compuesto, libros recomendados…' },
+  // Capítulo 3 · Movimientos
+  { cap: '3 · Movimientos', tab: 'movs', el: () => hnTabBtn('movs'), pose: 'explica', t: 'Movimientos', x: 'Aquí está todo lo que has anotado, día por día. Toca cualquiera para editarlo o borrarlo.' },
+  { cap: '3 · Movimientos', tab: 'movs', el: () => $('#view .search'), pose: 'piensa', t: 'Busca lo que sea', x: 'Escribe una nota, una categoría o una tarjeta y lo encuentras al instante.' },
+  { cap: '3 · Movimientos', tab: 'movs', el: () => $('#view .hscroll'), pose: 'explica', t: 'Filtra', x: 'Mira solo lo que pagaste con una tarjeta, en efectivo o en una categoría. Así descubres en qué se te va el dinero.' },
+  // Capítulo 4 · Deudas
+  { cap: '4 · Tarjetas y deudas', tab: 'tarjetas', el: () => hnTabBtn('tarjetas'), pose: 'explica', t: 'Tarjetas y deudas', x: 'Tus tarjetas, tus préstamos, lo que le debes a personas y lo que te deben a ti, todo en un solo lugar.' },
+  { cap: '4 · Tarjetas y deudas', tab: 'tarjetas', el: () => $('#view .tiles'), pose: 'piensa', t: 'Tus totales', x: 'Lo que debes en tarjetas, en bancos y a personas, y lo que te deben. Lo sano es no usar más del 30% del límite de tus tarjetas.' },
+  { cap: '4 · Tarjetas y deudas', tab: 'tarjetas', el: () => $('#view .cc'), pose: 'explica', t: 'Corte y pago', x: 'Cada tarjeta muestra su saldo. Verde es el día de corte y rojo la fecha límite para pagar sin intereses. Tócala para registrar un pago o ajustar el saldo.' },
+  { cap: '4 · Tarjetas y deudas', tab: 'tarjetas', el: () => $('#prBancos'), pose: 'piensa', t: 'Préstamos con interés', x: 'Ponle la tasa a tu préstamo y te digo cuánto debes exacto hoy, el interés de hoy y el de mañana. Si le pones el mismo terminal a su cuota fija, se conectan: pagas la cuota en Inicio y baja aquí solito.' },
+  { cap: '4 · Tarjetas y deudas', tab: 'tarjetas', el: () => $('#prCobrar'), pose: 'anota', t: '¿Quién te debe?', x: 'Si le prestas a alguien, anótalo con la fecha en que te paga. Ese día te lo recuerdo, y hasta te ayudo a escribirle por WhatsApp.' },
+  // Capítulo 5 · Plan
+  { cap: '5 · Tu plan', tab: 'plan', el: () => hnTabBtn('plan'), pose: 'anota', t: 'Tu plan', x: 'Aquí organizas tu dinero: ingresos, gastos fijos y topes por categoría. Si te acercas a un tope, yo te aviso con cariño.' },
+  { cap: '5 · Tu plan', tab: 'plan', el: () => $('#view .seg'), pose: 'explica', t: 'Cuatro secciones', x: 'Fijos, Extras (incentivos, bonos y ventas), Proyección (cómo te irá) y Ahorro (dónde guardas tu dinero y tus metas).' },
+  { cap: '5 · Tu plan', tab: 'extras', el: () => $('#view .xmas') || $('#view .tiles'), pose: 'celebra', t: 'Dinero extra y doble sueldo', x: 'Anota lo que entra sin día fijo. Y aquí está la calculadora de la regalía navideña y el bono vacacional, para decidir en qué usarlos antes de que lleguen.' },
+  { cap: '5 · Tu plan', tab: 'proy', el: () => hnSec('Gastos que se exceden') || hnSec('Tu mes en números'), pose: 'piensa', t: 'Lo que debes vigilar', x: 'Te aviso qué gastos se están pasando y qué hacer para corregirlo a tiempo.' },
+  { cap: '5 · Tu plan', tab: 'proy', el: () => hnSec('Simulador'), pose: 'piensa', t: 'Simulador', x: '¿Y si recortas el delivery o una suscripción? Pruébalo aquí y te digo cuánto ahorrarías en un año.' },
+  // Capítulo 6 · Ahorro
+  { cap: '6 · Tus ahorros', tab: 'ahorro', el: () => $('#view .save-hero'), pose: 'ahorra', t: 'Mis ahorros', x: 'Anota dónde tienes guardado tu dinero y míralo crecer mes a mes.' },
+  { cap: '6 · Tus ahorros', tab: 'ahorro', el: () => hnSec('Mis metas') || hnSec('Metas') || $('#view section.note'), pose: 'ahorra', t: 'Tus metas', x: 'Dime “quiero ahorrar para un carro” y te armo el plan: cuánto apartar al mes y para cuándo. Te celebro al 25, 50 y 75%… ¡y cuando la logres! 🎉' },
+  // Capítulo 7 · Ajustes
+  { cap: '7 · Ajustes', tab: 'inicio', el: () => $('#view header [data-act=ajustes]'), pose: 'anota', t: 'Ajustes', x: 'En el engranaje está tu configuración. Te enseño lo más útil.' },
+  { cap: '7 · Ajustes', sheet: true, el: () => $('#notifPanel'), pose: 'saluda', t: 'Mi consejo a las 10 AM', x: 'Activa este interruptor y cada mañana te llega mi consejo al celular. Lo puedes apagar cuando quieras.' },
+  { cap: '7 · Ajustes', sheet: true, el: () => hnPanelDe('Exportar y recordatorios'), pose: 'piensa', t: 'Excel y Calendario', x: 'Lleva tus números a Excel o pon tus fechas de corte, pago y cobro en el Calendario del iPhone, con alarma.' },
+  { cap: '7 · Ajustes', sheet: true, el: () => hnPanelDe('Respaldo'), pose: 'anota', t: 'Tu respaldo', x: 'Todo se guarda solo en tu cuenta. Aun así, de vez en cuando descarga un respaldo: es gratis y te da tranquilidad.' },
+  { cap: '7 · Ajustes', sheet: true, el: () => $('#sheet .tuto-card'), pose: 'explica', t: 'Repite cuando quieras', x: 'Este tutorial siempre está aquí. Y en “Acerca de” ves la versión de la app y sus novedades.' },
+  { cap: '¡Listo!', pose: 'celebra', end: true, t: '¡Ya eres experto!', x: 'Eso es todo. Lo más importante: anota cada gasto y separa tu ahorro el día que cobras. Yo te acompaño todos los días. ¡Vamos por esas metas! 💚' },
 ];
 function hnTour() {
   hnBurbujaFuera(); hnCerrar(); closeSheet(); if (OB) closeOB();
@@ -5045,6 +5084,7 @@ function hnTour() {
 function hnTourPaso(dir = 1) {
   if (!HN.tour) return;
   const st = COACH[HN.tour.i];
+  if (st.sheet) { if ($('#sheetWrap').hidden) ajustes(); } else if (!$('#sheetWrap').hidden) closeSheet();
   if (st.tab && S.tab !== st.tab) { S.tab = st.tab; S.anim = false; render(); }
   document.body.classList.toggle('hc-btn', !!st.btn); hnBtnVis();
   let el = st.el ? st.el() : null;
@@ -5053,7 +5093,8 @@ function hnTourPaso(dir = 1) {
     el = null;
   }
   HN.tour.el = el;
-  if (el && !hnFijo(el)) {
+  if (el && st.sheet) { el.scrollIntoView({ block: 'center', behavior: 'instant' }); [200, 420, 750].forEach(ms => setTimeout(hnCoachPos, ms)); }
+  else if (el && !hnFijo(el)) {
     const r = el.getBoundingClientRect(), vh = innerHeight;
     const y = scrollY + r.top - (r.height > vh * 0.45 ? 90 : Math.max(90, (vh * 0.5 - r.height) / 2));
     window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
@@ -5065,7 +5106,7 @@ function hnTourPaso(dir = 1) {
     <div class="hc-box" id="hcBox" role="dialog" aria-live="polite">
       <div class="hc-han ${cut ? 'cut' : ''}"><img src="${cut ? HANNAH_IMG.explica : HANNAH_IMG[st.pose] || HANNAH_IMG.explica}" alt="Hannah"></div>
       <div class="hc-bub">
-        <div class="hc-top"><b>Hannah</b><span>${i + 1} / ${N}</span></div>
+        <div class="hc-top"><b>${esc(st.cap || 'Hannah')}</b><span>${i + 1} / ${N}</span></div>
         <h3>${esc(typeof st.t === 'function' ? st.t() : st.t)}</h3>
         <p id="hcTxt" data-full="${esc(txt)}"></p>
         <div class="hc-bar"><i style="width:${Math.round((i + 1) / N * 100)}%"></i></div>
@@ -5102,7 +5143,7 @@ function hnTourFin(felicitar) {
   clearInterval(HN.tw); HN.tour = null;
   removeEventListener('resize', hnCoachPos); removeEventListener('scroll', hnCoachPos);
   const el = $('#hnTour'); if (el) { el.hidden = true; el.innerHTML = ''; }
-  document.body.classList.remove('hn-touring', 'hc-btn');
+  document.body.classList.remove('hn-touring', 'hc-btn'); if (!$('#sheetWrap').hidden) closeSheet();
   S.tab = 'inicio'; S.anim = true; render(); window.scrollTo(0, 0);
   hnMarcarTutorial(); hnBtnVis();
   if (felicitar) { hnAbrir(); hnSay([hnPose('celebra', 'Hannah celebrando'), '¡Terminaste el tutorial! 🎉 Ahora sí le vas a sacar el 100% a la app.', '¿Quieres que empecemos con algo? Puedo anotar un gasto por ti, decirte cuánto tienes hoy o armarte una meta.'], [chip('Registrar un gasto', 'reg', 'compras', true), chip('¿Cuánto dinero tengo hoy?', 'hoy', 'efectivo'), chip('Quiero ahorrar para algo', 'meta', 'meta')]); }
@@ -5208,8 +5249,8 @@ function hnRegParse(raw) {
     if (propia) d.cat = propia.id;
     else for (const [id, re] of HN_CAT_RE) if (re.test(s) && S.cfg.categorias.some(c => c.id === id)) { d.cat = id; break; }
     // ¿Es el pago de un gasto fijo? (ej. "pagué la luz")
-    const fj = S.cfg.fijos.filter(f => f.n && hnNorm(f.n).length > 2 && s.includes(hnNorm(f.n)) && !M(mesDe(d.fecha)).movs.some(t => t.fijoId === f.id))[0];
-    if (fj && /pague|pago de|pagar/.test(s)) { d.fijoId = fj.id; d.cat = fj.cat; d.nota = fj.n; if (!d.monto) d.monto = fijoMonto(mesDe(d.fecha), fj); if (fj.mon && !/peso|dolar/.test(s)) d.mon = fj.mon; }
+    const fj = S.cfg.fijos.filter(f => f.n && hnNorm(f.n).length > 2 && s.includes(hnNorm(f.n)) && !fijoCompleto(mesDe(d.fecha), f))[0];
+    if (fj && /pague|pago de|pagar/.test(s)) { d.fijoId = fj.id; d.cat = fj.cat; d.nota = fj.n; if (!d.monto) d.monto = esPartes(fj) ? num(fj.parte) : fijoMonto(mesDe(d.fecha), fj); if (fj.mon && !/peso|dolar/.test(s)) d.mon = fj.mon; }
   }
   // Abono a un préstamo (por nombre o terminal)
   if (d.tipo === 'gasto') { const pr = hnPrestDe(s)[0]; if (pr && /abon|pague|pago|cuota|deposite/.test(s)) { d.prestamoId = pr.id; d.cat = 'deudas'; d.nota = 'Abono ' + pr.n; if (!d.metodo || d.metodo === 'efectivo' && !/efectivo/.test(s)) d.metodo = d.metodo || 'transferencia'; } }
@@ -5347,6 +5388,7 @@ function hnTexto(raw) {
 function hnTexto2(t, s0, s, sc) {
   if (hnEsRegistro(s0, t) && !/ me debe\b/.test(s0)) return hnRegistrar(t);
   if (hnDatos(s, t) || (sc !== s && hnDatos(sc, t))) return;
+  if (/que (mas )?(puedes|sabes) hacer|que (mas )?haces|como me (puedes )?ayudar|^ayuda$|para que sirves/.test(s)) return hnSabiasLista();
   if (/\blibro|leer|lectura/.test(s)) return hnLibrosResp();
   if (/\bfrase|\bcita\b|motiva|inspira/.test(s)) return hnFrase();
   if (/consejo (del|de) (dia|hoy)/.test(s)) return hnCmd('consejoHoy');
@@ -5415,6 +5457,7 @@ function hnCmd(c, label) {
     case 'tourAtras': if (HN.tour && HN.tour.i > 0) { HN.tour.i--; hnTourPaso(-1); } return;
     case 'tourSalir': { const ult = HN.tour && HN.tour.i >= COACH.length - 1; hnTourFin(ult); return; }
     case 'tutorial': closeSheet(); return hnTour();
+    case 'sabias': habla(label); return hnSabiasLista();
     case 'libros': habla(label); return hnLibrosResp();
     case 'libros2': habla(label); return hnLibrosTodos();
     case 'frase': habla(label); return hnFrase();
@@ -5745,7 +5788,7 @@ function hnDelDia() {
   else if (cobroHoy) msg = { html: esc(hnAnimo('diaCobro', { monto: money(cobroHoy.m) })), tono: 'good', cmd: 'hoy' };
   else if (sinAnotar >= 4) msg = { html: esc(hnAnimo('regreso', { dias: sinAnotar })), cmd: 'reg' };
   else { const e = hnEstadoAhorro(), r = hnRacha(); if (r >= 3 && (!e || e.k !== 'atrasado')) msg = { html: esc(hnAnimo('racha', { dias: r })), tono: 'good' }; else if (e) msg = { html: esc(e.txt), tono: e.tono }; else if (new Date().getDate() >= diasMes(new Date().getFullYear(), new Date().getMonth()) - 2) msg = { html: esc(hnAnimo('findeMes')) }; }
-  if (!msg) return;
+  if (!msg) { if (hnSabiasBurbuja()) hnLS('hn-burb-dia', hoy); return; }
   hnLS('hn-burb-dia', hoy);
   hnBurbuja(msg.html, msg);
 }
@@ -5776,6 +5819,56 @@ function hnAviso(d = new Date()) {
 }
 // Si se abre una hoja o el tutorial, la burbuja se quita
 (() => { const sw = document.getElementById('sheetWrap'); if (sw && window.MutationObserver) new MutationObserver(() => { if (!sw.hidden) hnBurbujaFuera(); }).observe(sw, { attributes: true, attributeFilter: ['hidden'] }); })();
+
+/* ============ "¿Sabías que puedes…?" — Hannah enseña la app poco a poco, sin cansar ============ */
+// Solo muestra lo que el usuario todavía no usa. Máximo uno cada 2 días en la burbuja, y nunca repite.
+const H_SABIAS = [
+  { id: 'texto', t: 'escribirme “gasté 650 en el súper con efectivo” y yo lo anoto por ti? Hasta puedes deshacerlo si me equivoco.', cmd: 'reg', b: 'Probar ahora' },
+  { id: 'hoy', t: 'preguntarme “¿cuánto dinero tengo hoy?” y te hago un resumen de tu día en segundos?', cmd: 'hoy', b: 'Ver mi día' },
+  { id: 'meta', t: 'decirme “quiero ahorrar para un carro” y te armo el plan con cuánto apartar cada mes?', cmd: 'meta', b: 'Crear una meta', si: () => !S.cfg.metas.some(g => g.id !== 'emergencia' && g.obj > 0) },
+  { id: 'emerg', t: 'ponerle una meta a tu fondo de emergencia? Con 3 meses de gastos guardados duermes más tranquilo.', cmd: 'meta:emergencia', b: 'Armarlo', si: () => { const g = S.cfg.metas.find(x => x.id === 'emergencia'); return g && !(g.obj > 0); } },
+  { id: 'tasa', t: 'ponerle la tasa de interés a tu préstamo y te digo cuánto debes exacto cada día?', act: 'tab:tarjetas', b: 'Ver préstamos', si: () => S.cfg.prestamos.some(p => tipoPrest(p) === 'banco' && !(num(p.tasa) > 0)) },
+  { id: 'terminal', t: 'ponerle el mismo terminal a tu préstamo y a su cuota fija? Así, al pagar la cuota en Inicio, baja el préstamo solito.', act: 'tab:tarjetas', b: 'Ver préstamos', si: () => S.cfg.prestamos.some(p => tipoPrest(p) === 'banco' && !p.fijoId) },
+  { id: 'cobrar', t: 'anotar quién te debe? Dime “Emilio me debe 1,000 y me paga el 30” y ese día te lo recuerdo.', act: 'tab:tarjetas', b: 'Ver “Me deben”', si: () => !(S.cfg.porCobrar || []).length },
+  { id: 'partes', t: 'poner gastos que pagas por partes, como la peluquería cada sábado? Yo calculo si el mes trae 4 o 5 semanas.', act: 'tab:inicio', b: 'Ver mis fijos', si: () => !S.cfg.fijos.some(f => esPartes(f)) },
+  { id: 'topes', t: 'ponerle un tope a una categoría (como comida fuera) y te aviso con cariño cuando te acerques?', act: 'tab:plan', b: 'Ir a mi plan', si: () => !S.cfg.categorias.some(c => num(c.tope) > 0) },
+  { id: 'preguntas', t: 'preguntarme “¿en qué gasto más este mes?” y te digo exactamente a dónde se va tu dinero?', q: 'en que gasto mas este mes', b: 'Preguntar' },
+  { id: 'interes', t: 'preguntarme “¿cuánto interés pago al día?” y te muestro lo que te cuestan tus préstamos?', q: 'cuanto interes pago al dia', b: 'Preguntar', si: () => S.cfg.prestamos.some(p => num(p.tasa) > 0) },
+  { id: 'feriados', t: 'preguntarme “¿cuándo es el próximo feriado?”? Y te aviso un día antes de cada uno.', q: 'cuando es el proximo feriado', b: 'Preguntar' },
+  { id: 'calendario', t: 'poner tus fechas de corte y pago en el Calendario del iPhone, con alarma, aunque no abras la app?', act: 'act:calendario', b: 'Abrir' },
+  { id: 'excel', t: 'descargar todos tus números en Excel con un toque?', act: 'act:excel', b: 'Descargar' },
+  { id: 'push', t: 'recibir mi consejo cada mañana a las 10:00 en tu celular? Se activa en Ajustes.', act: 'act:ajustes', b: 'Ir a Ajustes', si: () => typeof nubeConfigurada === 'function' && nubeConfigurada() && hnLS('hn-push') !== 'on' },
+  { id: 'unmes', t: 'cambiar el monto de un gasto fijo solo para este mes? Toca el monto y elige “Solo este mes”.', act: 'tab:inicio', b: 'Ver mis fijos' },
+  { id: 'buscar', t: 'buscar cualquier gasto en Movimientos escribiendo una palabra de la nota?', act: 'tab:movs', b: 'Ver movimientos' },
+  { id: 'simulador', t: 'usar el simulador de Proyección para ver cuánto ahorras al año si recortas un gasto?', act: 'tab:proy', b: 'Probar' },
+  { id: 'navidad', t: 'calcular tu regalía navideña y planificar en qué usarla antes de que llegue?', act: 'tab:extras', b: 'Calcular' },
+  { id: 'respaldo', t: 'descargar un respaldo de tus datos desde Ajustes? Es gratis y da tranquilidad.', act: 'act:ajustes', b: 'Ir a Ajustes' },
+  { id: 'libros', t: 'pedirme un libro recomendado o una frase para motivarte con tus finanzas?', cmd: 'libros', b: 'Ver libros' },
+  { id: 'tutorial', t: 'repetir el tutorial cuando quieras desde Ajustes? Te señalo cada parte de la app.', cmd: 'tour', b: 'Ver tutorial', si: () => !(hnEstado().tutorial) },
+];
+const hnSabiasVistos = () => { try { return JSON.parse(hnLS('hn-sabias') || '[]'); } catch (e) { return []; } };
+function hnSabiasSig() {
+  const v = hnSabiasVistos();
+  return H_SABIAS.find(x => !v.includes(x.id) && (!x.si || (() => { try { return x.si(); } catch (e) { return false; } })()));
+}
+function hnSabiasMarcar(id) { const v = hnSabiasVistos(); if (!v.includes(id)) { v.push(id); hnLS('hn-sabias', JSON.stringify(v)); } hnLS('hn-sabias-dia', hoyISO()); }
+const hnSabiasCmd = x => x.cmd || (x.q ? 'q:' + x.q : x.act && x.act.startsWith('tab:') ? 'ir:' + x.act.slice(4) : x.act ? 'act:' + x.act.slice(4) : 'menu');
+// ¿Toca hoy? (cada 2 días como máximo)
+function hnSabiasToca() { const d = hnLS('hn-sabias-dia'); return !d || (parseISO(hoyISO()) - parseISO(d)) / 864e5 >= 2; }
+function hnSabiasBurbuja() {
+  if (!hnSabiasToca()) return false;
+  const x = hnSabiasSig(); if (!x) return false;
+  hnSabiasMarcar(x.id);
+  hnBurbuja(`<b class="hn-sab">💡 ¿Sabías que puedes…</b> ${esc(x.t)}`, { cmd: hnSabiasCmd(x), ms: 11000 });
+  return true;
+}
+// En el chat: "¿Qué más puedes hacer?"
+function hnSabiasLista() {
+  const v = hnSabiasVistos(), pend = H_SABIAS.filter(x => !x.si || (() => { try { return x.si(); } catch (e) { return false; } })());
+  const l = [...pend.filter(x => !v.includes(x.id)), ...pend.filter(x => v.includes(x.id))].slice(0, 3);
+  l.forEach(x => hnSabiasMarcar(x.id));
+  hnSay(['¡Puedo hacer muchas cosas por ti! Por ejemplo, ¿sabías que puedes…', ...l.map(x => '💡 ' + esc(x.t))], [...l.map(x => chip(x.b, hnSabiasCmd(x), 'sparkle')), chip('Más cosas', 'sabias', 'sparkle', true), chip('Ver el tutorial', 'tour', 'compass')]);
+}
 
 /* Frases de ánimo de Hannah: celebra, anima y frena con cariño. Sin culpa, sin sermones.
    Placeholders por grupo (se reemplazan antes de mostrar):
@@ -6686,6 +6779,82 @@ document.addEventListener('click', e => {
   b.disabled = true; if (b.dataset.act === 'pushOn') pushActivar(); else pushDesactivar();
 });
 
+/* ============ Gastos fijos que se pagan por partes (semanal, quincenal o varias veces al mes) ============ */
+const DIAS_SEM = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const DIAS_SEM_PL = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+const esPartes = f => !!f && ['semana', 'quincena', 'veces'].includes(f.freq) && num(f.parte) > 0;
+// Cuántas veces cae un día de la semana en un mes ('YYYY-MM')
+function vecesDiaEnMes(m, dow) { const y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1, n = diasMes(y, mo); let c = 0; for (let d = 1; d <= n; d++) if (new Date(y, mo, d).getDay() === dow) c++; return c; }
+function partesDelMes(m, f) { return f.freq === 'semana' ? vecesDiaEnMes(m, num(f.diaSem)) : f.freq === 'quincena' ? 2 : Math.max(1, Math.round(num(f.veces) || 1)); }
+const fijoPagos = (m, fid) => M(m).movs.filter(t => t.fijoId === fid).sort((a, b) => (a.fecha + (a.ts || '')).localeCompare(b.fecha + (b.ts || '')));
+function fijoPagadoRD(m, f) { return sum(fijoPagos(m, f.id), t => toRD(t.monto, t.mon)); }
+function fijoCompleto(m, f) { if (!esPartes(f)) return !!fijoPagos(m, f.id).length; const n = fijoPagos(m, f.id).length, N = partesDelMes(m, f); return n >= N || fijoPagadoRD(m, f) >= fijoRD(m, f) - 0.009; }
+function partesTxt(m, f) {
+  const N = partesDelMes(m, f), n = fijoPagos(m, f.id).length;
+  const como = f.freq === 'semana' ? `${money(num(f.parte), f.mon)} cada ${DIAS_SEM[num(f.diaSem)]} (${N} este mes)` : f.freq === 'quincena' ? `${money(num(f.parte), f.mon)} cada quincena` : `${money(num(f.parte), f.mon)} × ${N} veces al mes`;
+  const pct = Math.min(100, n / N * 100);
+  return `<span class="pt-txt">${como}</span><span class="pt-bar"><i style="width:${pct}%"></i></span><span class="pt-cnt">${fijoCompleto(m, f) ? '¡Completo! ✓' : `${n} de ${N} · faltan ${money(Math.max(0, fijoMonto(m, f) - sum(fijoPagos(m, f.id), t => conv(t.monto, t.mon, f.mon))), f.mon)}`}</span>`;
+}
+// Tocar el cuadrito: registra el próximo pago (o, si ya está completo, quita el último)
+function pagarParte(f) {
+  const m = S.mes, pg = fijoPagos(m, f.id), N = partesDelMes(m, f);
+  if (fijoCompleto(m, f) && pg.length) { const last = pg[pg.length - 1]; M(m).movs = M(m).movs.filter(x => x.id !== last.id); saveMes(m); render(); toast(`Quité el último pago de ${f.n}`); return; }
+  const falta = Math.max(0, fijoMonto(m, f) - sum(pg, t => conv(t.monto, t.mon, f.mon)));
+  const monto = Math.min(num(f.parte), falta) || num(f.parte);
+  openMov({ ...(metValido(f.metodo) ? { metodo: f.metodo } : {}), tipo: 'gasto', monto, mon: f.mon, cat: f.cat, fijoId: f.id, nota: `${f.n} (${pg.length + 1} de ${N})`, fecha: m === mesActual() ? hoyISO() : m + '-' + pad(Math.min(f.dia || 1, 28)) });
+}
+// Agenda: los próximos pagos semanales
+function agendaPartes(dentro, add) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  for (const f of S.cfg.fijos) {
+    if (!esPartes(f) || f.freq !== 'semana' || tarjeta(f.metodo)) continue;
+    for (let k = 0; k <= 31; k++) {
+      const d = new Date(hoy); d.setDate(d.getDate() + k); if (!dentro(d) || d.getDay() !== num(f.diaSem)) continue;
+      const m = mesDe(iso(d)); if (fijoCompleto(m, f)) continue;
+      add({ fecha: d, k: 'fijo', t: f.n, s: 'Pago semanal' + (metValido(f.metodo) ? ' · con ' + metodo(f.metodo).n : ''), monto: toRD(num(f.parte), f.mon), c: cat(f.cat).c, ic: icF(f), act: 'editFijo', id: f.id });
+    }
+  }
+}
+
+/* ---------- Formulario: ¿cómo lo pagas? ---------- */
+function formFijo(id) {
+  formFijoV1(id);
+  const f = id ? S.cfg.fijos.find(x => x.id === id) : null, form = $('#gForm'); if (!form || !SH) return;
+  const freq = f && f.freq || 'mes', mLbl = $('#g_m')?.closest('label');
+  const html = `<div class="pt-form" id="ptForm">
+    <div class="eyebrow" style="margin-bottom:7px">¿Cómo lo pagas?</div>
+    <div class="seg seg-sm pt-seg">${[['mes', 'Una vez al mes'], ['semana', 'Cada semana'], ['quincena', 'Cada quincena'], ['veces', 'Varias veces']].map(([k, n]) => `<button type="button" class="${freq === k ? 'on' : ''}" data-ptf="${k}">${n}</button>`).join('')}</div>
+    <input type="hidden" name="freq" id="g_freq" value="${freq}">
+    <div class="pt-campos">
+      <label class="f">Monto de cada pago<input class="in" name="parte" id="g_parte" inputmode="decimal" placeholder="Ej. 450" value="${f && f.parte != null ? esc(f.parte) : ''}"></label>
+      <label class="f pt-dia">¿Qué día de la semana?<select class="in" name="diaSem" id="g_diaSem">${DIAS_SEM.map((d, k) => `<option value="${k}" ${String(f?.diaSem ?? 6) === String(k) ? 'selected' : ''}>${d[0].toUpperCase() + d.slice(1)}</option>`).join('')}</select></label>
+      <label class="f pt-veces">¿Cuántas veces al mes?<input class="in" name="veces" id="g_veces" inputmode="numeric" placeholder="Ej. 3" value="${f && f.veces != null ? esc(f.veces) : ''}"></label>
+    </div>
+    <div class="pt-prev" id="ptPrev"></div></div>`;
+  if (mLbl) mLbl.insertAdjacentHTML('beforebegin', html); else form.insertAdjacentHTML('afterbegin', html);
+  SH.fields.push({ k: 'freq' }, { k: 'parte', type: 'num' }, { k: 'diaSem' }, { k: 'veces', type: 'num' });
+  const orig = SH.onSave;
+  SH.onSave = o => {
+    if (o.freq === 'mes' || !o.freq) { o.freq = 'mes'; delete o.parte; delete o.veces; return orig(o); }
+    if (!(o.parte > 0)) return 'Pon el monto de cada pago';
+    o.diaSem = +o.diaSem || 0; if (o.freq === 'veces') o.veces = Math.max(1, Math.min(31, Math.round(o.veces || 1)));
+    o.m = Math.round(o.parte * partesDelMes(mesActual(), o) * 100) / 100; // monto de referencia del mes actual
+    return orig(o);
+  };
+  const pinta = () => {
+    const fr = $('#g_freq').value, partes = fr !== 'mes';
+    $('#ptForm').classList.toggle('partes', partes); $('#ptForm').dataset.f = fr;
+    if (mLbl) mLbl.hidden = partes;
+    const p = num($('#g_parte').value), tmp = { freq: fr, parte: p, diaSem: +$('#g_diaSem').value, veces: num($('#g_veces').value) };
+    const meses = [mesActual(), mesDe(iso(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)))];
+    $('#ptPrev').innerHTML = !partes ? '' : !(p > 0) ? '<span class="muted">Escribe cuánto pagas cada vez y te calculo el total del mes.</span>'
+      : meses.map(m => { const N = partesDelMes(m, tmp); return `<div><b>${MESES[+m.slice(5) - 1]}:</b> ${N} ${fr === 'semana' ? DIAS_SEM_PL[tmp.diaSem] : fr === 'quincena' ? 'quincenas' : 'pagos'} × ${money(p)} = <b>${money(p * N)}</b></div>`; }).join('') + `<div class="tiny muted" style="margin-top:4px">Cada vez que pagues, toca el cuadrito y se anota un pago. Cuando completes todos, queda en verde.</div>`;
+  };
+  $('#ptForm').addEventListener('click', e => { const b = e.target.closest('[data-ptf]'); if (!b) return; $('#g_freq').value = b.dataset.ptf; $('#ptForm').querySelectorAll('[data-ptf]').forEach(x => x.classList.toggle('on', x === b)); pinta(); });
+  ['g_parte', 'g_diaSem', 'g_veces'].forEach(k => $('#' + k).addEventListener('input', pinta));
+  pinta();
+}
+
 /* ============ Eventos ============ */
 document.addEventListener('click', async e => {
   if (S.infoOpen && !e.target.closest('.info-wrap')) setInfo(false);
@@ -6751,7 +6920,7 @@ document.addEventListener('click', async e => {
       if (!SH.confirmDel) { SH.confirmDel = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger'; break; }
       SH.onDelete(); closeSheet(); render(); toast('Eliminado'); break;
     case 'pagarFijo': {
-      const f = S.cfg.fijos.find(x => x.id === id); const mv = fijoMov(S.mes, id);
+      const f = S.cfg.fijos.find(x => x.id === id); if (esPartes(f)) { pagarParte(f); break; } const mv = fijoMov(S.mes, id);
       if (mv) { M(S.mes).movs = M(S.mes).movs.filter(x => x.id !== mv.id); saveMes(S.mes); render(); toast(f.n + ' vuelve a pendiente'); }
       else openMov({ ...(metValido(f.metodo) ? { metodo: f.metodo } : {}), tipo: 'gasto', monto: fijoMonto(S.mes, f) || '', mon: f.mon, cat: f.cat, fijoId: f.id, nota: f.n, fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-' + pad(Math.min(f.dia || 1, 28)) });
       break; }
