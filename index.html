@@ -896,7 +896,7 @@ const diasEntre = (a, b) => Math.round((new Date(b.getFullYear(), b.getMonth(), 
 const sum = (arr, f) => arr.reduce((a, x) => a + (Number(f ? f(x) : x) || 0), 0);
 const num = v => { const n = parseFloat(String(v).replace(/,/g, '')); return isFinite(n) ? n : 0; };
 const fmtN = (n, dec = 2) => (Number(n) || 0).toLocaleString('es-DO', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-const money = (n, cur = 'RD') => (n < 0 ? '−' : '') + (cur === 'US' ? 'US$' : 'RD$') + fmtN(Math.abs(n), Math.abs(n) >= 100000 ? 0 : 2);
+const money = (n, cur = 'RD') => (n < 0 ? '−' : '') + (cur === 'US' ? 'US$' : 'RD$') + fmtN(Math.abs(n), 2);
 const moneyC = n => { const a = Math.abs(n); const s = a >= 1e6 ? fmtN(a / 1e6, 2) + 'M' : a >= 1e4 ? fmtN(a / 1e3, 1) + 'k' : fmtN(a, 0); return (n < 0 ? '−' : '') + 'RD$' + s; };
 const fechaLarga = s => parseISO(s).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' });
 const fechaCorta = d => d.getDate() + ' ' + MES3[d.getMonth()];
@@ -1855,9 +1855,9 @@ const MON_OPTS = [{ v: 'RD', n: 'Pesos (RD$)' }, { v: 'US', n: 'Dólares (US$)' 
 function formFijo(id) {
   const f = id ? S.cfg.fijos.find(x => x.id === id) : null;
   openForm({ title: f ? 'Editar gasto fijo' : 'Nuevo gasto fijo', values: f || { cat: 'vivienda', mon: 'RD' },
-    fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Alquiler' }, { k: 'm', label: 'Monto mensual normal', type: 'num' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'cat', label: 'Reglón', type: 'select', options: CAT_OPTS() }, { k: 'dia', label: 'Día de pago (para recordatorio y proyección)', type: 'num', ph: 'Ej. 30' }, { k: 'metodo', label: '¿Con qué lo pagas normalmente?', type: 'select', options: metOpts() }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'otros' }],
+    fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Alquiler' }, { k: 'm', label: 'Monto mensual normal', type: 'num' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'cat', label: 'Reglón', type: 'select', options: CAT_OPTS() }, { k: 'dia', label: 'Día de pago (para recordatorio y proyección)', type: 'num', ph: 'Ej. 30' }, { k: 'metodo', label: '¿Con qué lo pagas normalmente?', type: 'select', options: metOpts() }, { k: 'term', label: 'Terminal del préstamo (si es una cuota) · se conecta solo', ph: 'Ej. 7710' }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'otros' }],
     note: f ? 'Si solo cambió este mes, mejor toca el monto en la lista y elige "Solo este mes".' : 'Elige un ícono para reconocerlo rápido en tus listas.',
-    onSave: o => { if (!o.n) return 'Ponle un nombre'; o.dia = Math.max(0, Math.min(31, Math.round(o.dia))); if (!o.ic) o.ic = guessIcon(o.n, o.cat); if (f) Object.assign(f, o); else S.cfg.fijos.push({ id: uid(), ...o }); saveCfg(); },
+    onSave: o => { if (!o.n) return 'Ponle un nombre'; o.dia = Math.max(0, Math.min(31, Math.round(o.dia))); o.term = String(o.term || '').replace(/\D/g, '').slice(-4); if (!o.ic) o.ic = guessIcon(o.n, o.cat); if (f) Object.assign(f, o); else S.cfg.fijos.push({ id: uid(), ...o }); const nv = prAutoVincular(); saveCfg(); if (nv.length) setTimeout(() => prPreguntarPagoPrevio(nv[0]), 400); },
     onDelete: f ? () => { S.cfg.fijos = S.cfg.fijos.filter(x => x.id !== id); saveCfg(); } : null });
 }
 function formTC(id) {
@@ -6392,9 +6392,9 @@ function vTarjetas() {
   <div class="stack-lg">
     <div class="tiles tiles-4">
       <div class="tile"><div class="eyebrow">${svgI('pago_tc', 15, 2)}Adeudado en TC</div><b class="${deuda > 0 ? 'neg' : ''}">${money(deuda)}</b><div class="tiny muted">${lim ? Math.round(deuda / lim * 100) : 0}% de ${moneyC(lim)} de límite</div></div>
-      <button class="tile" data-act="prIr" data-v="prBancos" style="text-align:left"><div class="eyebrow">${svgI('bank', 15, 2)}Adeudado en bancos</div><b class="${tB > 0 ? 'neg' : ''}">${moneyC(tB)}</b><div class="tiny muted">${bancos.length} préstamo${bancos.length !== 1 ? 's' : ''}${intHoy > 0 ? ` · interés hoy ${money(intHoy)}` : ''}</div></button>
-      <button class="tile" data-act="prIr" data-v="prPersonas" style="text-align:left"><div class="eyebrow">${svgI('user', 15, 2)}Pendiente con personas</div><b>${moneyC(tP)}</b><div class="tiny muted">${personas.length} persona${personas.length !== 1 ? 's' : ''}</div></button>
-      <button class="tile" data-act="prIr" data-v="prCobrar" style="text-align:left"><div class="eyebrow">${svgI('ingreso', 15, 2)}Me deben</div><b class="${tC > 0 ? 'pos' : ''}">${moneyC(tC)}</b><div class="tiny muted">${pcAct.length} cuenta${pcAct.length !== 1 ? 's' : ''} por cobrar</div></button>
+      <button class="tile" data-act="prIr" data-v="prBancos" style="text-align:left"><div class="eyebrow">${svgI('bank', 15, 2)}Adeudado en bancos</div><b class="${tB > 0 ? 'neg' : ''}">${money(tB)}</b><div class="tiny muted">${bancos.length} préstamo${bancos.length !== 1 ? 's' : ''}${intHoy > 0 ? ` · interés hoy ${money(intHoy)}` : ''}</div></button>
+      <button class="tile" data-act="prIr" data-v="prPersonas" style="text-align:left"><div class="eyebrow">${svgI('user', 15, 2)}Pendiente con personas</div><b>${money(tP)}</b><div class="tiny muted">${personas.length} persona${personas.length !== 1 ? 's' : ''}</div></button>
+      <button class="tile" data-act="prIr" data-v="prCobrar" style="text-align:left"><div class="eyebrow">${svgI('ingreso', 15, 2)}Me deben</div><b class="${tC > 0 ? 'pos' : ''}">${money(tC)}</b><div class="tiny muted">${pcAct.length} cuenta${pcAct.length !== 1 ? 's' : ''} por cobrar</div></button>
     </div>
     <section class="wide"><div class="sec-h"><h2>Tarjetas de crédito</h2><button class="link" data-act="formTC">Añadir</button></div>
       <div class="seg seg-sm" style="margin-bottom:12px;max-width:420px">${[['pago', 'Fecha de pago'], ['corte', 'Fecha de corte'], ['saldo', 'Mayor saldo']].map(([k, n]) => `<button class="${(S.ordenTC || 'pago') === k ? 'on' : ''}" data-act="ordenTC" data-v="${k}">${n}</button>`).join('')}</div>
@@ -6466,7 +6466,7 @@ function verPrest(id) {
 function formPrest(id, tipo) {
   const p = id ? S.cfg.prestamos.find(x => x.id === id) : null;
   const tp = p ? tipoPrest(p) : (tipo || 'banco');
-  const fijos = S.cfg.fijos.filter(f => !S.cfg.prestamos.some(q => q !== p && q.fijoId === f.id));
+  const fijos = S.cfg.fijos.filter(f => !S.cfg.prestamos.some(q => q !== p && q.fijoId === f.id)).sort((a, b) => (a.cat === 'deudas' ? 0 : 1) - (b.cat === 'deudas' ? 0 : 1));
   const v = p ? { ...p, tipo: tp, base: p.base || 365, ...(conInteres(p) ? { cap: p.cap, capFecha: p.capFecha } : { cap: '', capFecha: hoyISO() }) } : { tipo: tp, estado: 'Al día', base: 365, capFecha: hoyISO() };
   openForm({ title: p ? 'Editar préstamo' : tp === 'banco' ? 'Nuevo préstamo de banco' : 'Le debo a una persona', values: v,
     note: 'Si tiene interés, pon la tasa anual y el capital que te dice el banco hoy: yo calculo cada día lo que debes exacto.',
@@ -6480,7 +6480,7 @@ function formPrest(id, tipo) {
       { k: 'cap', label: 'Capital pendiente hoy (según el banco)', type: 'num' },
       { k: 'capFecha', label: 'Fecha de ese capital', type: 'date' },
       { k: 'base', label: 'Cálculo del interés', type: 'select', options: [{ v: 365, n: 'Año de 365 días (lo más común)' }, { v: 360, n: 'Año de 360 días' }] },
-      { k: 'fijoId', label: 'Su cuota mensual es el gasto fijo…', type: 'select', options: [{ v: '', n: 'No tiene cuota fija' }, ...fijos.map(f => ({ v: f.id, n: f.n + (num(f.m) ? ' · ' + money(num(f.m), f.mon) : '') }))] },
+      { k: 'fijoId', label: 'Su cuota mensual es el gasto fijo… (las de Deudas salen primero)', type: 'select', options: [{ v: '', n: 'No tiene cuota fija' }, ...fijos.map(f => ({ v: f.id, n: (f.cat === 'deudas' ? '💳 ' : '') + f.n + (f.term ? ' ·' + f.term : '') + (num(f.m) ? ' · ' + money(num(f.m), f.mon) : '') }))] },
       { k: 'ic', label: 'Ícono', type: 'icon', def: tp === 'banco' ? 'bank' : 'user' },
     ],
     onSave: o => {
@@ -6498,11 +6498,13 @@ function formPrest(id, tipo) {
         else if (num(p.tasa) !== o.tasa || (num(p.base) || 365) !== o.base) { const i = prestInfo(p); o.cap = Math.round(i.saldo * 100) / 100; o.capFecha = hoyISO(); o.capTs = new Date().toISOString(); } // nueva tasa desde hoy, sin perder el interés ya generado
         else { o.cap = p.cap; o.capFecha = p.capFecha; o.capTs = p.capTs; }
       } else { o.tasa = 0; delete o.cap; delete o.capFecha; if (p) { delete p.cap; delete p.capFecha; delete p.capTs; } }
+      if (!o.fijoId && o.term && (!p || !p.fijoId)) { const fx = S.cfg.fijos.find(f => f.term && f.term === o.term && !S.cfg.prestamos.some(q => q !== p && q.fijoId === f.id)); if (fx) o.fijoId = fx.id; }
       if ((o.fijoId || '') !== (antes.fijoId || '')) { const now = new Date().toISOString(); if (p && p.fijoId) o.fijoHist = [...(p.fijoHist || []), { fijoId: p.fijoId, desde: p.vinculoTs || '', hasta: now }]; o.vinculoTs = now; }
       if (!o.ic) o.ic = o.tipo === 'banco' ? 'bank' : 'user';
       Object.assign(t, o);
       if (!p) S.cfg.prestamos.push(t);
       saveCfg();
+      if (o.fijoId && o.fijoId !== (antes.fijoId || '')) setTimeout(() => prPreguntarPagoPrevio(t), 400);
     },
     onDelete: p ? () => { S.cfg.prestamos = S.cfg.prestamos.filter(x => x.id !== id); saveCfg(); } : null });
   // Mostrar los campos de interés solo cuando hacen falta
@@ -6594,6 +6596,33 @@ document.addEventListener('click', e => {
     case 'pcTodo': pcAbono(id, true); break;
     case 'pcBorrarAbono': { const c = porCobrar().find(x => x.id === id); c.abonos = (c.abonos || []).filter(a => a.id !== v); saveCfg(); verCobrar(id); break; }
   }
+});
+
+/* ---------- Conectar cuota fija ↔ préstamo por terminal ---------- */
+function prAutoVincular() {
+  const nuevos = [];
+  for (const p of S.cfg.prestamos) {
+    if (p.fijoId || !p.term) continue;
+    const f = S.cfg.fijos.find(x => x.term && x.term === p.term && !S.cfg.prestamos.some(q => q.fijoId === x.id));
+    if (f) { p.fijoId = f.id; p.vinculoTs = new Date().toISOString(); nuevos.push(p); }
+  }
+  return nuevos;
+}
+// Si la cuota de este mes ya estaba pagada antes de conectarla, preguntar si se descuenta del préstamo
+function prPreguntarPagoPrevio(p) {
+  const f = S.cfg.fijos.find(x => x.id === p.fijoId); if (!f) return;
+  const mv = M(mesActual()).movs.find(t => t.fijoId === f.id && (t.ts || '') <= (p.vinculoTs || ''));
+  if (!mv) { toast(`${f.n} quedó conectada con ${p.n} ✓`); return; }
+  openSheet(`${sheetH('¿Descuento esta cuota?')}<div class="stack">
+    <p class="small" style="margin:0">Ya marcaste <b>${esc(f.n)}</b> como pagada este mes (${money(mv.monto, mv.mon)} el ${fechaCorta(parseISO(mv.fecha))}).</p>
+    <p class="small muted" style="margin:0">Si el saldo que pusiste en <b>${esc(p.n)}</b> es de <b>antes</b> de ese pago, descuéntala. Si ya es el saldo después de pagarla, déjalo así para no descontarla dos veces.</p>
+    <div class="grid2"><button class="btn" data-act="prVincSi" data-id="${p.id}" data-v="${mv.ts}">Sí, descontarla</button><button class="btn ghost" data-act="prVincNo">No, ya está incluida</button></div></div>`);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act=prVincSi],[data-act=prVincNo]'); if (!b) return;
+  if (b.dataset.act === 'prVincSi') { const p = S.cfg.prestamos.find(x => x.id === b.dataset.id); if (p) { p.vinculoTs = new Date(Date.parse(b.dataset.v || '') - 1 || 0).toISOString(); saveCfg(); } toast('Listo: la cuota se descontó del préstamo ✓'); }
+  else toast('Listo, conectada sin descontar ✓');
+  closeSheet(); render();
 });
 
 /* ============ Notificación diaria de Hannah a las 10:00 a. m. (Web Push) ============ */
