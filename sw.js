@@ -1,6 +1,6 @@
 /* Ahorro Inteligente · service worker
    Cambia VERSION cada vez que subas cambios, para que el iPhone baje la versión nueva. */
-const VERSION = 'ahorro-2026-11-11-8';
+const VERSION = 'ahorro-2026-11-12-3';
 const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 const EXTERNOS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
 
