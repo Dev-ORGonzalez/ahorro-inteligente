@@ -653,7 +653,7 @@ body.hn-on .saved{top:calc(14px + env(safe-area-inset-top,0px));bottom:auto}
 .pr-link svg{flex:none}
 .pr-hero{border-radius:20px;padding:16px;background:linear-gradient(135deg,#0D3A2D,#0B7A55);color:#fff;display:flex;flex-direction:column;gap:3px}
 .pr-hero .eyebrow{color:rgba(255,255,255,.75)}
-.pr-hero b{font-family:var(--f-display);font-size:32px;letter-spacing:-.02em}
+.pr-hero>b{font-family:var(--f-display);font-size:32px;letter-spacing:-.02em}
 .pr-hero span{font-size:13.5px;opacity:.85}
 .pr-tasa{display:flex;align-items:center;gap:12px;text-align:left;width:100%;border:1.5px dashed color-mix(in srgb,var(--accent) 50%,var(--line));background:var(--accent-soft);color:var(--ink)}
 .pr-tasa>svg{color:var(--accent);flex:none}
@@ -761,6 +761,10 @@ body.pf-on .hn-btn,body.pf-on .hn-burb{display:none!important}
 .push-hora .in{width:auto;min-width:118px;flex:none;text-align:center;font-weight:700;font-size:16px;padding:8px 10px}
 .push-hora[hidden]{display:none}
 #pagosRow[hidden]{display:none}
+.pr-hero>b{font-family:var(--f-display);font-size:32px;letter-spacing:-.02em}
+.pr-hero span b{font-family:inherit;font-size:inherit;letter-spacing:0}
+.pr-hero span{font-size:14px;opacity:.92;line-height:1.35}
+.pr-hero .pr-saldar{margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.22);opacity:1}
 /* ===== Modo Navidad (html.navidad, lo activa navidad.js solo en diciembre) =====
    Rojo navideño para la marca y los botones; el verde (--accent) se queda como color de "positivo/ingreso"
    para no cambiar el significado de los montos. */
@@ -910,6 +914,16 @@ html.navidad .hc-back{border-color:#F0D3CB;color:#B3122E}
   html.navidad .note::after{animation:none}
 }
 @media print{html.navidad::before,html.navidad::after,html.navidad .note::after{display:none}}
+/* v1.7.2 · Guardar a la primera */
+html{touch-action:manipulation}
+.toast,.saved{pointer-events:none}
+html.rb-kb .toast,html.rb-kb .saved{bottom:calc(var(--rb-kb,0px) + 12px);top:auto}
+.rb-err{display:flex;align-items:flex-start;gap:9px;background:var(--bad-soft);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);border-radius:14px;padding:11px 13px;font-size:14.5px;font-weight:600;line-height:1.4;scroll-margin:16px}
+.rb-err svg{flex:none;margin-top:1px}
+.rb-err span{min-width:0;overflow-wrap:anywhere}
+.rb-err.rb-sacude{animation:rbSacude .36s ease}
+@keyframes rbSacude{20%{transform:translateX(-5px)}45%{transform:translateX(4px)}70%{transform:translateX(-2px)}}
+@media (prefers-reduced-motion: reduce){.rb-err.rb-sacude{animation:none}}
 
 </style>
 </head>
@@ -1235,7 +1249,7 @@ const LS_BASE = MODO_COMPARTIR ? 'ahorro-inteligente-v1' : 'ahorro-inteligente-o
 let LS = LS_BASE; // con cuenta en línea se vuelve LS_BASE + ':' + id del usuario
 let DB = null, UIDV = null; const timers = {}, chains = {};
 const docKey = m => 'mes_' + m.replace('-', '_');
-function lsSave() { if (nubeConfigurada() && !USR) return; try { localStorage.setItem(LS, JSON.stringify({ cfg: S.cfg, months: S.months, stamps: S.stamps })); } catch (e) {} }
+function lsSave() { if (nubeConfigurada() && !USR) return; try { localStorage.setItem(LS, JSON.stringify({ cfg: S.cfg, months: S.months, stamps: S.stamps })); } catch (e) { if (typeof rbLsFallo === 'function') rbLsFallo(e); } }
 function lsLoad() { try { return JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { return null; } }
 // Cada cambio se guarda al instante en el dispositivo y, si hay cuenta, en la nube (gana la versión más reciente)
 function persist(keys) {
@@ -1293,6 +1307,8 @@ async function fusionar(db, id) {
     const keys = new Set([...Object.keys(remoto), 'config', ...Object.keys(S.months).map(docKey)]);
     for (const k of keys) {
       const r = remoto[k], lt = S.stamps[k] || 0;
+      if (r && lt && r.t === lt && (k === 'config' || S.months[k.slice(4).replace('_', '-')])) continue; // misma versión y ya está aquí: se deja tal cual (no rompe una hoja abierta)
+      if (r && r.t >= lt && k === 'config' && rbHojaAbierta()) { rbFusionarLuego(db, id); continue; } // se aplica al cerrar la hoja
       if (r && r.t >= lt) {
         if (k === 'config') S.cfg = migrate(r.data);
         else if (k.startsWith('mes_')) S.months[k.slice(4).replace('_', '-')] = r.data;
@@ -1765,7 +1781,7 @@ function barChart(d) {
 /* ============ Hojas (formularios) ============ */
 let SH = null; // estado de la hoja abierta
 function openSheet(html, ctx) { SH = ctx || {}; $('#sheet').innerHTML = gx(html); $('#sheetWrap').hidden = false; document.body.style.overflow = 'hidden'; setTimeout(() => { const a = $('#sheet [autofocus]'); if (a) a.focus(); }, 60); }
-function closeSheet() { if (NV && $('#nv_live')) { clearTimeout(nvAutoSave.t); guardarNavidadDatos(); NV = null; render(); } $('#sheetWrap').hidden = true; $('#sheet').innerHTML = ''; SH = null; document.body.style.overflow = ''; }
+function closeSheet() { if (NV && $('#nv_live')) { clearTimeout(nvAutoSave.t); guardarNavidadDatos(); NV = null; render(); } $('#sheetWrap').hidden = true; $('#sheet').innerHTML = ''; SH = null; document.body.style.overflow = ''; if (typeof rbHojaCerrada === 'function') rbHojaCerrada(); }
 function toast(t) { const el = $('#toast'); el.textContent = gx(t); el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); }
 const sheetH = t => `<div class="sheet-h"><h2>${esc(t)}</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ICON.x}</button></div>`;
 
@@ -1815,9 +1831,9 @@ function drawMov() {
 function guardarMov() {
   const t = SH.t; t.monto = Math.round(num($('#mMonto').value) * 100) / 100;
   t.fecha = $('#mFecha').value || hoyISO(); t.nota = $('#mNota').value.trim();
-  if (!(t.monto > 0)) { toast('Escribe un monto mayor que cero'); return; }
-  if (t.tipo === 'pago_tc' && !t.destino) { toast('Elige la tarjeta que estás pagando'); return; }
-  if (t.tipo === 'ahorro' && !t.metaId) { if (!t.metaId2 && !t.cuentaId) { toast(cuentasA().length ? 'Elige dónde lo guardas' : 'Elige la meta de ahorro'); return; } if (t.metaId2) t.metaId = t.metaId2; }
+  if (!(t.monto > 0)) { avisoHoja('Escribe un monto mayor que cero'); return; }
+  if (t.tipo === 'pago_tc' && !t.destino) { avisoHoja('Elige la tarjeta que estás pagando'); return; }
+  if (t.tipo === 'ahorro' && !t.metaId) { if (!t.metaId2 && !t.cuentaId) { avisoHoja(cuentasA().length ? 'Elige dónde lo guardas' : 'Elige la meta de ahorro'); return; } if (t.metaId2) t.metaId = t.metaId2; }
   delete t.metaId2;
   if (t.tipo !== 'gasto') delete t.cat;
   if (t.tipo === 'ahorro' || t.prestamoId) t.cat = t.prestamoId ? 'deudas' : undefined;
@@ -2040,7 +2056,7 @@ function editMontoFijo(id) {
 }
 function guardarMontoFijo(todos) {
   const f = S.cfg.fijos.find(x => x.id === SH.fid); const v = Math.round(num($('#mfMonto').value) * 100) / 100;
-  if (v < 0) { toast('El monto no puede ser negativo'); return; }
+  if (v < 0) { avisoHoja('El monto no puede ser negativo'); return; }
   if (todos) { const antes = f.m; f.m = v; if (M(S.mes).fx) delete M(S.mes).fx[f.id]; saveCfg(); saveMes(S.mes); toast(`${f.n}: ${money(antes, f.mon)} → ${money(v, f.mon)} desde ahora`); }
   else { M(S.mes).fx ||= {}; M(S.mes).fx[f.id] = v; saveMes(S.mes); toast(`${f.n} en ${MESES[+S.mes.slice(5) - 1]}: ${money(v, f.mon)}`); }
   closeSheet(); render();
@@ -2476,10 +2492,10 @@ function drawExtra() {
 }
 function guardarExtra() {
   exRead(); const x = EXF;
-  if (!x.mes) { toast('Elige el mes'); return; }
-  if (esVeh(x.tipo)) { if (!(num(x.venta) > 0)) { toast('Escribe el precio de venta'); return; } x.monto = Math.round(gananciaVeh(x) * 100) / 100; }
-  else if (x.tipo === 'incentivo') { if (!(num(x.bruto) > 0)) { toast('Escribe el monto bruto'); return; } x.monto = Math.round(num(x.bruto) * (1 - num(S.cfg.incentivos.isr) / 100) * 100) / 100; }
-  else { x.monto = Math.round(num(x.monto) * 100) / 100; if (!(x.monto > 0)) { toast('Escribe el monto'); return; } }
+  if (!x.mes) { avisoHoja('Elige el mes'); return; }
+  if (esVeh(x.tipo)) { if (!(num(x.venta) > 0)) { avisoHoja('Escribe el precio de venta'); return; } x.monto = Math.round(gananciaVeh(x) * 100) / 100; }
+  else if (x.tipo === 'incentivo') { if (!(num(x.bruto) > 0)) { avisoHoja('Escribe el monto bruto'); return; } x.monto = Math.round(num(x.bruto) * (1 - num(S.cfg.incentivos.isr) / 100) * 100) / 100; }
+  else { x.monto = Math.round(num(x.monto) * 100) / 100; if (!(x.monto > 0)) { avisoHoja('Escribe el monto'); return; } }
   if (!x.n.trim()) x.n = x.tipo === 'incentivo' ? 'Incentivos de ' + MESES[+x.mes.slice(5) - 1] : TIPOS_EX[x.tipo].n;
   const o = { ...x }; delete o.confirm; o.id ||= x.tipo.slice(0, 3) + '-' + uid();
   ['venta', 'compra', 'importe', 'arreglos', 'otros', 'bruto'].forEach(k => { if (o[k] === '' || o[k] == null) delete o[k]; else o[k] = num(o[k]); });
@@ -2897,8 +2913,8 @@ function libroExcel() {
         rows: cfg.fijos.map(f => [cat(f.cat).n, f.n, monTxt(f.mon), num(f.m), toRD(num(f.m), f.mon), f.dia || '', metValido(f.metodo) ? metodo(f.metodo).n : '']) },
       { name: 'Tarjetas', cols: [{ h: 'Tarjeta', w: 16 }, { h: 'Terminal', w: 9 }, { h: 'Moneda', w: 8 }, { h: 'Límite', t: 'm' }, { h: 'Saldo', t: 'm' }, { h: 'Disponible', t: 'm' }, { h: 'Día de corte', w: 11 }, { h: 'Día límite de pago', w: 16 }, { h: 'Uso del límite', t: 'p', w: 13 }, { h: 'Cashback', t: 'p', w: 10 }],
         rows: cfg.tarjetas.map(c => { const s = saldoTC(c); return [c.n, c.term || '', monTxt(c.mon), num(c.limite), s, Math.max(0, num(c.limite) - s), c.corte || '', c.pago || '', c.limite ? s / c.limite : '', c.cashback ? c.cashback / 100 : '']; }) },
-      { name: 'Préstamos', cols: [{ h: 'Préstamo', w: 18 }, { h: 'Tipo', w: 10 }, { h: 'Terminal', w: 10 }, { h: 'Estado', w: 14 }, { h: 'Tasa anual %', w: 12 }, { h: 'Monto total', t: 'm' }, { h: 'Abonado', t: 'm' }, { h: 'Pendiente hoy', t: 'm' }, { h: 'Interés de hoy', t: 'm' }],
-        rows: cfg.prestamos.map(p => { const i = prestInfo(p); return [p.n, tipoPrest(p) === 'banco' ? 'Banco' : 'Persona', p.term || '', p.estado || '', num(p.tasa) || '', num(p.m), i.pagado, Math.max(0, i.saldo), i.diario]; }) },
+      { name: 'Préstamos', cols: [{ h: 'Préstamo', w: 18 }, { h: 'Tipo', w: 10 }, { h: 'Terminal', w: 10 }, { h: 'Estado', w: 14 }, { h: 'Tasa anual %', w: 12 }, { h: 'Monto total', t: 'm' }, { h: 'Abonado', t: 'm' }, { h: 'Balance (como el banco)', t: 'm' }, { h: 'Interés acumulado', t: 'm' }, { h: 'Para saldarlo hoy', t: 'm' }, { h: 'Interés de hoy', t: 'm' }],
+        rows: cfg.prestamos.map(p => { const i = prestInfo(p); return [p.n, tipoPrest(p) === 'banco' ? 'Banco' : 'Persona', p.term || '', p.estado || '', num(p.tasa) || '', num(p.m), i.pagado, Math.max(0, i.capital), i.interes, Math.max(0, i.saldo), i.diario]; }) },
       { name: 'Me deben', cols: [{ h: 'Persona', w: 18 }, { h: 'Moneda', w: 8 }, { h: 'Me prestó / le presté', t: 'm' }, { h: 'Ya me dio', t: 'm' }, { h: 'Me debe', t: 'm' }, { h: 'Fecha de pago', w: 14 }, { h: 'Nota', w: 28 }],
         rows: (cfg.porCobrar || []).map(c => [c.n, c.mon || 'RD', num(c.m), sum(c.abonos || [], a => num(a.monto)), pendCobrar(c), c.fecha || '', c.nota || '']) },
       { name: 'Ingresos extra', cols: [{ h: 'Mes', w: 10 }, { h: 'Tipo', w: 20 }, { h: 'Descripción', w: 28 }, { h: 'Monto', t: 'm' }, { h: 'Seguro o posible', w: 15 }, { h: 'Recibido', w: 10 }],
@@ -3578,8 +3594,8 @@ const H_KB = {
       resp: 'Toca el gasto fijo y en **“¿Cómo lo pagas?”** elige **Cada semana**, **Cada quincena** o **Varias veces**.\n\nPon cuánto pagas cada vez (ej. RD$450) y el día. Yo calculo si el mes trae 4 o 5 semanas, y cada vez que pagues tocas el cuadrito: 1 de 4, 2 de 4… Cuando completes, queda en verde.',
       ir: { tab: 'inicio' }, irTxt: 'Ver mis gastos fijos', sig: ['pago_periodico'] },
     { id: 'prestamo_interes', titulo: 'Préstamos con tasa de interés', grupo: 'tarjetas',
-      claves: ['tasa de interes', 'prestamo con interes', 'interes diario', 'interes del prestamo', 'cuanto debo exacto', 'interes de hoy', 'capital pendiente', 'poner la tasa', 'saldo exacto'],
-      resp: 'Ve a **Tarjetas → Préstamos de bancos**, toca tu préstamo y luego **Editar**.\n\n• Pon la **tasa de interés anual** (ej. 18).\n• Pon el **capital pendiente** que te dice el banco y la fecha.\n\nDesde ahí calculo cada día lo que debes exacto, el interés de hoy y el de mañana. Cada pago cubre primero el interés y lo demás baja el capital.',
+      claves: ['tasa de interes', 'prestamo con interes', 'interes diario', 'interes del prestamo', 'cuanto debo exacto', 'interes de hoy', 'capital pendiente', 'poner la tasa', 'saldo exacto', 'balance a la fecha', 'balance del banco', 'ultimo pago de cuota', 'no coincide con el banco', 'no cuadra con el banco', 'interes acumulado', 'el banco no cambia', 'saldar el prestamo'],
+      resp: 'Ve a **Tarjetas → Préstamos de bancos**, toca tu préstamo y luego **Editar** (o **Actualizar saldo con el banco**). Copia de tu app del banco:\n\n• El **Balance a la fecha** (ej. RD$732,281.99) y la fecha de hoy.\n• La **fecha de tu último pago de cuota** (ej. 16 oct).\n• La **tasa de interés anual** (ej. 5.83).\n\nYo cuento el interés **cada día desde ese último pago**. El banco no lo suma a tu balance: lo cobra dentro de la cuota. Por eso tu balance del banco no se mueve de un día a otro, y aquí lo ves igual, con el **interés acumulado aparte**.\n\nCuando pagas la cuota, primero se paga ese interés y lo demás baja el balance. **Para saldarlo hoy** = balance + interés acumulado.',
       ir: { tab: 'tarjetas' }, irTxt: 'Ver mis préstamos', sig: ['prestamo_cuota', 'por_cobrar'] },
     { id: 'prestamo_cuota', titulo: 'Conectar la cuota con el préstamo', grupo: 'tarjetas',
       claves: ['conectar cuota', 'cuota del prestamo', 'cuota fija prestamo', 'pague la cuota', 'no baja el prestamo', 'baja en ambas', 'vincular prestamo'],
@@ -4784,7 +4800,7 @@ const H_FRASES = [
 const APP_VER = '1.7.2';
 const APP_FECHA = 'Noviembre 2026';
 const NOVEDADES = [
-  { v: '1.7.2', f: 'Noviembre 2026', items: ['Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”'] },
+  { v: '1.7.2', f: 'Noviembre 2026', items: ['Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”', 'Intereses de préstamos exactos como tu banco: ves el mismo “Balance a la fecha” que el banco, el interés acumulado desde tu último pago aparte y cuánto de tu cuota se va en intereses'] },
   { v: '1.7.0', f: 'Noviembre 2026', items: ['Pagos cada varios meses: bimestral, trimestral, cuatrimestral, semestral o anual (ej. la universidad)', 'Solo cuentan como gasto el mes que te toca y te avisa antes de la fecha', 'Si te ayudan con una parte (beca o subsidio), te digo cuánto sale de tu bolsillo', 'Opción de apartar un poco cada mes: creo una meta y cuando pagas empieza de cero para el próximo'] },
   { v: '1.6.0', f: 'Noviembre 2026', items: ['Gastos fijos que pagas por partes: cada semana, cada quincena o varias veces al mes (ej. peluquería RD$450 cada sábado)', 'La app calcula sola si el mes trae 4 o 5 semanas y vas marcando cada pago', '“¿Sabías que puedes…?”: Hannah te enseña la app poco a poco, sin saturarte', 'Tutorial nuevo y completo, por capítulos: desde cómo te avisa hasta cada función', 'Montos siempre con centavos exactos y préstamos conectados a su cuota por terminal'] },
   { v: '1.5.0', f: 'Noviembre 2026', items: ['Hannah te acompaña: te celebra cuando vas bien con el ahorro y te frena con cariño cuando te pasas', 'Consejo diario de Hannah como notificación a las 10:00 a. m. (lo activas o apagas en Ajustes)', 'Avisos de días feriados de República Dominicana, un día antes y el mismo día', 'Modo Navidad automático en diciembre, con Hannah de gorrito', 'Acerca de más simple: solo las últimas novedades'] },
@@ -5385,7 +5401,7 @@ function hnRegGuardar() {
   </div>`;
   const extra = [];
   if (t.tipo === 'gasto' && k && num(k.tope) > 0) { const g = variablePorCat(mes, k.id); if (g > k.tope) extra.push(`⚠️ Ojo: en <b>${esc(k.n)}</b> ya vas por ${money(g)} este mes y tu tope es ${money(k.tope)}.`); else if (g > k.tope * 0.8) extra.push(`En <b>${esc(k.n)}</b> ya usaste el ${Math.round(g / k.tope * 100)}% de tu tope del mes.`); }
-  if (t.prestamoId) { const pr = S.cfg.prestamos.find(x => x.id === t.prestamoId), i = pr && prestInfo(pr); if (i) extra.push(`A <b>${esc(pr.n)}</b> ahora le debes <b>${money(Math.max(0, i.saldo))}</b>.${i.diario > 0 ? ` Tu interés diario bajó a ${money(i.diario)}.` : ''}`); }
+  if (t.prestamoId) { const pr = S.cfg.prestamos.find(x => x.id === t.prestamoId), i = pr && prestInfo(pr); if (i) extra.push(`A <b>${esc(pr.n)}</b> ahora le debes <b>${money(Math.max(0, i.capital))}</b>.${i.diario > 0 ? ` Tu interés diario bajó a ${money(i.diario)}.` : ''}`); }
   else if (t.tipo === 'gasto' && mes === mesActual()) { const p = presupuestoDiario(); extra.push(p.diario >= 0 ? `Ahora puedes gastar <b>${money(p.diario)}</b> por día hasta tu próximo cobro.` : 'Con este gasto ya pasaste lo planificado para este tramo. Frena un poquito hasta tu próximo cobro. 💪'); }
   if (t.tipo === 'ahorro' && meta && meta.obj > 0) { const ap = aportadoMeta(meta); extra.push(ap >= meta.obj ? `🎉 ¡Llegaste a tu meta <b>${esc(meta.n)}</b>!` : `¡Bien! Ya llevas ${money(ap)} de ${money(meta.obj)} (${Math.round(ap / meta.obj * 100)}%).`); }
   hnSay([{ html: card, card: true }, ...extra],
@@ -5652,11 +5668,13 @@ function hnDatos(s, raw = '') {
   }
   // Intereses de préstamos
   if (/interes/.test(s) && /tarjeta/.test(s) && !/prestamo/.test(s)) return hnSay(['💳 Las tarjetas <b>no cobran interés si pagas el total</b> antes del día límite (el día rojo). Si pagas solo el mínimo o una parte, el banco cobra interés sobre lo que queda, y suele ser de los más altos.', 'Por eso mi consejo: paga el total cada mes. Si no puedes, paga lo más que puedas y no uses la tarjeta hasta ponerte al día.'], [chip('Ver mis tarjetas', 'ir:tarjetas', 'pago_tc', true), chip('Menú', 'menu', 'grid')]), true;
+  // "¿Por qué el balance del banco no cambia / no cuadra con el interés?" → explicar cómo se cuenta
+  if (/interes/.test(s) && /banco|balance/.test(s) && /no (cambia|sube|baja|coincide|cuadra|aparece|suma|se mueve)|diferente|distinto|por que|porque/.test(s)) return hnTema('prestamo_interes'), true;
   if (/interes/.test(s) && /prestamo|pago|pague|pagado|pagando|genero|generan|cobran|cuesta|hoy|manana|dia|llevo/.test(s)) {
     const l = (hnPrestDe(s).length ? hnPrestDe(s) : S.cfg.prestamos).map(p => ({ p, i: prestInfo(p) })).filter(x => x.i.diario > 0);
     if (!l.length) return hnSay('Ninguno de tus préstamos tiene tasa de interés puesta. Ponle la tasa en <b>Tarjetas → tu préstamo → Editar</b> y te digo cuánto te cuesta cada día.', [chip('Ir a mis préstamos', 'ir:tarjetas', 'bank', true), chip('Menú', 'menu')]), true;
     const tot = sum(l, x => x.i.diario);
-    return hnSay([hnCard('Intereses de tus préstamos', l.map(x => hnFila(esc(x.p.n), money(x.i.diario) + '/día', 'neg')).join('') + '<div class="hn-sep"></div>' + hnFila('Hoy', money(tot), 'neg') + hnFila('Mañana', money(tot), 'neg') + hnFila('Este mes (aprox.)', money(sum(l, x => x.i.mes))) + hnFila('En un año si no abonas', money(sum(l, x => x.i.anio)), 'neg') + (sum(l, x => x.i.intPag) > 0 ? hnFila('Ya has pagado en intereses', money(sum(l, x => x.i.intPag))) : '')),
+    return hnSay([hnCard('Intereses de tus préstamos', l.map(x => hnFila(esc(x.p.n), money(x.i.diario) + '/día', 'neg')).join('') + '<div class="hn-sep"></div>' + hnFila('Hoy', money(tot), 'neg') + hnFila('Mañana', money(tot), 'neg') + hnFila('Acumulado desde tu último pago', money(sum(l, x => x.i.interes)), 'neg') + hnFila('Este mes (aprox.)', money(sum(l, x => x.i.mes))) + hnFila('En un año si no abonas', money(sum(l, x => x.i.anio)), 'neg') + (sum(l, x => x.i.intPag) > 0 ? hnFila('Ya has pagado en intereses', money(sum(l, x => x.i.intPag))) : '')),
       `💡 Cada peso que abones extra al capital deja de generar interés todos los días que siguen.${l.length > 1 ? ` El que más te cuesta es <b>${esc(l.sort((a, b) => b.i.diario - a.i.diario)[0].p.n)}</b>.` : ''}`],
       [chip('Ver mis préstamos', 'ir:tarjetas', 'bank', true), chip('Menú', 'menu', 'grid')]), true;
   }
@@ -5669,7 +5687,7 @@ function hnDatos(s, raw = '') {
   // Cuánto debo
   if (/cuanto debo|mis deudas|que debo|deuda total|debo en total|cuanto le debo/.test(s) || (tcs.length && /debo|saldo|deuda/.test(s))) {
     if (tcs.length) return hnSay(tcs.map(c => `<b>${esc(c.n)}</b>: debes ${money(saldoTC(c), c.mon)}${c.limite ? ` de ${money(c.limite, c.mon)} de límite` : ''}.`).join('<br>'), [chip('Ver la tarjeta', 'act:verTC:' + tcs[0].id, 'pago_tc', true), chip('Menú', 'menu', 'grid')]), true;
-    const ps = hnPrestDe(s); if (ps.length) { const p = ps[0], i = prestInfo(p); return hnSay(`A <b>${esc(p.n)}</b> le debes <b>${money(Math.max(0, i.saldo))}</b>${i.diario > 0 ? ` hoy (con ${money(i.interes)} de interés acumulado). Mañana serán ${money(i.saldo + i.diario)}.` : '.'}`, [chip('Ver el préstamo', 'act:verPrest:' + p.id, 'bank', true), chip('Menú', 'menu', 'grid')]), true; }
+    const ps = hnPrestDe(s); if (ps.length) { const p = ps[0], i = prestInfo(p); return hnSay(`A <b>${esc(p.n)}</b> le debes <b>${money(Math.max(0, i.capital))}</b>${i.diario > 0 ? ` (el balance que te muestra el banco), más ${money(i.interes)} de interés acumulado desde tu último pago. Para saldarlo hoy serían ${money(i.saldo)}, y cada día se suman ${money(i.diario)}.` : '.'}`, [chip('Ver el préstamo', 'act:verPrest:' + p.id, 'bank', true), chip('Menú', 'menu', 'grid')]), true; }
     const tc = sum(S.cfg.tarjetas, t => toRD(saldoTC(t), t.mon)), b = sum(S.cfg.prestamos.filter(p => tipoPrest(p) === 'banco'), saldoPrestamoV2), pe = sum(S.cfg.prestamos.filter(p => tipoPrest(p) === 'persona'), saldoPrestamoV2);
     const top = S.cfg.tarjetas.map(t => ({ t, s: toRD(saldoTC(t), t.mon) })).sort((a, b) => b.s - a.s)[0];
     return hnSay([hnCard('Lo que debes hoy', hnFila('Tarjetas de crédito', money(tc), tc > 0 ? 'neg' : '') + hnFila('Préstamos de bancos', money(b), b > 0 ? 'neg' : '') + hnFila('A personas', money(pe)) + '<div class="hn-sep"></div>' + hnFila('Total', money(tc + b + pe), 'neg')),
@@ -6708,6 +6726,10 @@ function pagosPrest(p) {
 }
 const DIA_MS = 864e5;
 const dIdx = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / DIA_MS);
+const dISO = d => new Date(d * DIA_MS).toISOString().slice(0, 10);
+// Desde cuándo corre el interés guardado: la fecha del último pago de cuota (intDesde) si es anterior a la del capital; si no, la del capital.
+// Los préstamos guardados antes de este cambio no tienen intDesde: siguen igual que siempre (desde la fecha del capital).
+const intDesdeDe = p => p.intDesde && p.capFecha && p.intDesde < p.capFecha ? p.intDesde : p.capFecha;
 // Cálculo del saldo: el interés corre cada día sobre el capital; cada pago cubre primero el interés acumulado y lo demás baja el capital
 function prestInfo(p, hasta = hoyISO()) {
   if (!conInteres(p)) {
@@ -6715,27 +6737,33 @@ function prestInfo(p, hasta = hoyISO()) {
     return { saldo: num(p.m) - pag, pagado: pag, capital: num(p.m) - pag, interes: 0, diario: 0, tasa: 0, intPag: 0, capPag: pag };
   }
   const r = num(p.tasa) / 100 / (num(p.base) === 360 ? 360 : 365);
-  let cap = num(p.cap), int = 0, d = dIdx(p.capFecha), intPag = 0, capPag = 0;
+  // El interés corre desde el último pago (intDesde); si no se puso, desde la fecha del capital.
+  // intIni: interés que ya se había generado antes de un cambio de tasa (se conserva). intIniDesde: desde cuándo venía (solo para mostrarlo).
+  let desde = intDesdeDe(p);
+  let cap = num(p.cap), int = num(p.intIni), d = dIdx(desde), intPag = 0, capPag = 0;
+  if (int > 0 && p.intIniDesde && p.intIniDesde < desde) desde = p.intIniDesde;
   const fin = dIdx(hasta);
   const pagos = pagosPrest(p).filter(t => (t.ts || '') > (p.capTs || '') && t.fecha <= hasta);
   for (const t of pagos) {
-    const dt = Math.max(dIdx(t.fecha), d);
+    const dt = Math.max(dIdx(t.fecha), d); // un pago con fecha anterior cuenta desde el inicio del cálculo (nunca días negativos)
     if (dt > d) { int += Math.max(0, cap) * r * (dt - d); d = dt; }
     const a = toRD(t.monto, t.mon), ai = Math.min(a, int);
     int -= ai; intPag += ai; cap -= (a - ai); capPag += a - ai;
+    if (a > 0 && int <= 0.005) desde = dISO(d); // pagó todo el interés: desde aquí vuelve a correr
   }
   if (fin > d) int += Math.max(0, cap) * r * (fin - d);
   cap = Math.max(0, cap);
   const diario = cap * r;
-  return { saldo: cap + int, capital: cap, interes: int, diario, manana: diario, mes: diario * diasMes(new Date().getFullYear(), new Date().getMonth()), anio: cap * num(p.tasa) / 100, pagado: sum(pagosPrest(p), t => toRD(t.monto, t.mon)), intPag, capPag, tasa: num(p.tasa), r };
+  return { saldo: cap + int, capital: cap, interes: int, desde, diario, manana: diario, mes: diario * diasMes(new Date().getFullYear(), new Date().getMonth()), anio: cap * num(p.tasa) / 100, pagado: sum(pagosPrest(p), t => toRD(t.monto, t.mon)), intPag, capPag, tasa: num(p.tasa), r };
 }
-const saldoPrestamoV2 = p => Math.max(0, prestInfo(p).saldo);
+// Lo que debes = el balance que te muestra el banco (capital). El interés acumulado se muestra aparte.
+const saldoPrestamoV2 = p => Math.max(0, prestInfo(p).capital);
 // Fijo conectado a un préstamo
 const prestDeFijo = f => S.cfg.prestamos.find(p => p.fijoId === f.id);
 function prestFijoLinea(f) {
   const p = prestDeFijo(f); if (!p) return '';
   const i = prestInfo(p);
-  return `<div class="s pr-link">${svgI('prestamo', 13, 2)}${esc(p.n)}: quedan <b>${money(Math.max(0, i.saldo))}</b>${i.diario > 0 ? ` · interés hoy ${money(i.diario)}` : ''}</div>`;
+  return `<div class="s pr-link">${svgI('prestamo', 13, 2)}${esc(p.n)}: quedan <b>${money(Math.max(0, i.capital))}</b>${i.diario > 0 ? ` · interés hoy ${money(i.diario)}` : ''}</div>`;
 }
 
 /* ---------- Pantalla Tarjetas y deudas ---------- */
@@ -6774,14 +6802,14 @@ function vTarjetas() {
   </div>`;
 }
 function prestItem(p) {
-  const i = prestInfo(p), base = conInteres(p) ? num(p.cap) + i.capPag : num(p.m);
+  const i = prestInfo(p), base = conInteres(p) ? Math.max(num(p.m), num(p.cap) + i.capPag) : num(p.m);
   const pct = base > 0 ? Math.min(100, Math.max(0, (base - i.capital) / base * 100)) : 0;
   const k = p.estado === 'Al día' ? 'good' : p.estado === 'Atrasado' ? 'bad' : 'warn';
   const f = p.fijoId && S.cfg.fijos.find(x => x.id === p.fijoId);
   return `<button class="item" data-act="verPrest" data-id="${p.id}" style="display:grid;gap:7px">
     <div class="row"><span class="badge" style="background:${tipoPrest(p) === 'banco' ? '#2F5D8A' : '#8A5A2F'}">${svgI(tipoPrest(p) === 'persona' && (!p.ic || p.ic === 'bank') ? 'user' : p.ic || 'bank')}</span>
       <div class="grow"><div class="t">${esc(p.n)}${p.term ? ` <span class="term">·${esc(p.term)}</span>` : ''}</div><div class="s">${conInteres(p) ? `${fmtN(i.tasa, 2).replace(/\.?0+$/, '')}% anual · interés hoy <b class="neg">${money(i.diario)}</b>` : `Pagado ${money(i.pagado)} de ${money(p.m)}`}${f ? ` · cuota: ${esc(f.n)}` : ''}</div></div>
-      <div class="right"><b class="num">${money(Math.max(0, i.saldo))}</b><div><span class="pill ${k}">${esc(p.estado || 'Al día')}</span></div></div></div>
+      <div class="right"><b class="num">${money(Math.max(0, conInteres(p) ? i.capital : i.saldo))}</b><div><span class="pill ${k}">${esc(p.estado || 'Al día')}</span></div></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div></button>`;
 }
 function cobrarItem(c) {
@@ -6802,18 +6830,22 @@ function verPrest(id) {
   if (f && conInteres(p)) {
     const h = new Date(); let d = f.dia ? fechaDia(h.getFullYear(), h.getMonth(), f.dia) : null; h.setHours(0, 0, 0, 0);
     if (d && (d < h || fijoMov(mesActual(), f.id))) d = fechaDia(h.getFullYear(), h.getMonth() + 1, f.dia);
-    if (d) { const dias = Math.max(0, Math.round((d - h) / DIA_MS)), intC = i.interes + i.diario * dias, cuota = fijoMonto(mesDe(iso(d)), f); if (cuota > 0) cuotaTxt = `<div class="alert"><span class="dot"></span><div>De tu próxima cuota de <b>${money(cuota)}</b> (${fechaCorta(d)}), unos <b>${money(Math.min(cuota, intC))}</b> se van en intereses y <b>${money(Math.max(0, cuota - intC))}</b> bajan tu deuda.</div></div>`; }
+    if (d) {
+      // La cuota paga el interés de todos los días desde tu último pago hasta el día de la cuota
+      const dias = Math.max(0, Math.round((d - h) / DIA_MS)), intC = i.interes + i.diario * dias, cuota = fijoMonto(mesDe(iso(d)), f), nd = Math.max(0, dIdx(iso(d)) - dIdx(i.desde));
+      if (cuota > 0) cuotaTxt = `<div class="alert"><span class="dot"></span><div>De tu próxima cuota de <b>${money(cuota)}</b> (${fechaCorta(d).replace(' ', '&nbsp;')}), unos <b>${money(Math.min(cuota, intC))}</b> son el interés de ${nd} día${nd !== 1 ? 's' : ''} (desde el ${fechaCorta(parseISO(i.desde)).replace(' ', '&nbsp;')}) y <b>${money(Math.max(0, cuota - intC))}</b> bajan tu capital.</div></div>`;
+    }
   }
   openSheet(`${sheetH(p.n + (p.term ? ' ·' + p.term : ''))}<div class="stack">
     ${conInteres(p) ? `
-    <div class="pr-hero"><div class="eyebrow">Debes hoy, exacto</div><b>${money(i.saldo)}</b><span>Capital ${money(i.capital)} + interés acumulado ${money(i.interes)}</span></div>
-    <div class="tiles"><div class="tile"><div class="eyebrow">${svgI('trend', 15, 2)}Interés de hoy</div><b class="neg">${money(i.diario)}</b><div class="tiny muted">${fmtN(i.tasa, 2).replace(/\.?0+$/, '')}% anual ÷ ${num(p.base) === 360 ? 360 : 365} días</div></div><div class="tile"><div class="eyebrow">${svgI('calendar', 15, 2)}Mañana se suma</div><b class="neg">${money(i.manana)}</b><div class="tiny muted">Mañana deberás ${money(i.saldo + i.manana)}</div></div></div>
+    <div class="pr-hero"><div class="eyebrow">Balance a la fecha · como en tu banco</div><b>${money(i.capital)}</b><span>Interés acumulado: <b>${money(i.interes)}</b> desde el ${fechaCorta(parseISO(i.desde)).replace(' ', '&nbsp;')}. Se paga con tu próxima cuota.</span><span class="pr-saldar">Para saldarlo hoy: <b>${money(i.saldo)}</b></span></div>
+    <div class="tiles"><div class="tile"><div class="eyebrow">${svgI('trend', 15, 2)}Interés de hoy</div><b class="neg">${money(i.diario)}</b><div class="tiny muted">${fmtN(i.tasa, 2).replace(/\.?0+$/, '')}% anual ÷ ${num(p.base) === 360 ? 360 : 365} días</div></div><div class="tile"><div class="eyebrow">${svgI('calendar', 15, 2)}Mañana se suma</div><b class="neg">${money(i.manana)}</b><div class="tiny muted">Para saldarlo mañana: ${money(i.saldo + i.manana)}</div></div></div>
     <div class="panel"><h3 style="margin:0 0 8px">Lo que te cuesta este préstamo</h3>
       <div class="kv"><span>Por día</span><b>${money(i.diario)}</b></div>
       <div class="kv"><span>Este mes (aprox.)</span><b>${money(i.mes)}</b></div>
       <div class="kv"><span>En un año, si no abonas</span><b class="neg">${money(i.anio)}</b></div>
       ${i.pagado > 0 ? `<div class="kv"><span>De lo que has pagado, fue a intereses</span><b>${money(i.intPag)}</b></div><div class="kv"><span>…y bajó tu capital</span><b class="pos">${money(i.capPag)}</b></div>` : ''}
-      <p class="tiny muted" style="margin:8px 0 0">Cada pago cubre primero el interés acumulado y lo demás baja el capital. Un abono extra baja el interés de todos los días que siguen.</p></div>
+      <p class="tiny muted" style="margin:8px 0 0">El interés se cuenta cada día desde tu último pago y el banco lo cobra dentro de la cuota; por eso tu balance en el banco no cambia día a día. Cada pago cubre primero ese interés y lo demás baja el capital. Un abono extra baja el interés de todos los días que siguen.</p></div>
     ${cuotaTxt}` : `
     <div class="tiles"><div class="tile"><div class="eyebrow">Pendiente</div><b>${money(Math.max(0, i.saldo))}</b></div><div class="tile"><div class="eyebrow">Abonado</div><b class="pos">${money(i.pagado)}</b></div></div>
     ${tipoPrest(p) === 'banco' ? `<button class="panel pr-tasa" data-act="formPrest" data-id="${id}">${svgI('trend', 18, 2)}<span class="grow"><b>¿Tiene tasa de interés?</b><span class="tiny muted">Ponle la tasa y te digo cuánto debes exacto cada día y cuánto interés se genera hoy y mañana.</span></span>${ICON.right}</button>` : ''}`}
@@ -6828,9 +6860,12 @@ function formPrest(id, tipo) {
   const p = id ? S.cfg.prestamos.find(x => x.id === id) : null;
   const tp = p ? tipoPrest(p) : (tipo || 'banco');
   const fijos = S.cfg.fijos.filter(f => !S.cfg.prestamos.some(q => q !== p && q.fijoId === f.id)).sort((a, b) => (a.cat === 'deudas' ? 0 : 1) - (b.cat === 'deudas' ? 0 : 1));
-  const v = p ? { ...p, tipo: tp, base: p.base || 365, ...(conInteres(p) ? { cap: p.cap, capFecha: p.capFecha } : { cap: '', capFecha: hoyISO() }) } : { tipo: tp, estado: 'Al día', base: 365, capFecha: hoyISO() };
+  // Al editar se muestra lo que debes HOY (balance, fecha de hoy y fecha de tu último pago). Si no tocas esos campos, no cambia nada.
+  const i0 = p && conInteres(p) ? prestInfo(p) : null;
+  const pre = i0 ? { cap: Math.round(i0.capital * 100) / 100, capFecha: hoyISO(), intDesde: i0.desde } : null;
+  const v = p ? { ...p, tipo: tp, base: p.base || 365, ...(pre || { cap: '', capFecha: hoyISO(), intDesde: '' }) } : { tipo: tp, estado: 'Al día', base: 365, capFecha: hoyISO() };
   openForm({ title: p ? 'Editar préstamo' : tp === 'banco' ? 'Nuevo préstamo de banco' : 'Le debo a una persona', values: v,
-    note: 'Si tiene interés, pon la tasa anual y el capital que te dice el banco hoy: yo calculo cada día lo que debes exacto.',
+    note: 'Si tiene interés, pon la tasa anual, el balance que te dice el banco y la fecha de tu último pago: desde ahí calculo el interés de cada día, igual que el banco.',
     fields: [
       { k: 'tipo', label: '¿Con quién es?', type: 'select', options: [{ v: 'banco', n: 'Banco, financiera o cooperativa' }, { v: 'persona', n: 'Una persona (amigo, familiar…)' }] },
       { k: 'n', label: 'Nombre', ph: tp === 'banco' ? 'Ej. Popular' : 'Ej. Tata' },
@@ -6838,8 +6873,9 @@ function formPrest(id, tipo) {
       { k: 'm', label: 'Monto total adeudado (sin interés)', type: 'num' },
       { k: 'estado', label: 'Estado', type: 'select', options: ['Al día', 'Puede esperar', 'Atrasado'].map(x => ({ v: x, n: x })) },
       { k: 'tasa', label: 'Tasa de interés anual (%) · deja vacío si no tiene', type: 'num', ph: 'Ej. 18' },
-      { k: 'cap', label: 'Capital pendiente hoy (según el banco)', type: 'num' },
-      { k: 'capFecha', label: 'Fecha de ese capital', type: 'date' },
+      { k: 'cap', label: 'Balance a la fecha (lo que te dice el banco)', type: 'num' },
+      { k: 'capFecha', label: 'Fecha de ese balance', type: 'date' },
+      { k: 'intDesde', label: 'Fecha de tu último pago de cuota (desde ahí corre el interés)', type: 'date' },
       { k: 'base', label: 'Cálculo del interés', type: 'select', options: [{ v: 365, n: 'Año de 365 días (lo más común)' }, { v: 360, n: 'Año de 360 días' }] },
       { k: 'fijoId', label: 'Su cuota mensual es el gasto fijo… (las de Deudas salen primero)', type: 'select', options: [{ v: '', n: 'No tiene cuota fija' }, ...fijos.map(f => ({ v: f.id, n: (f.cat === 'deudas' ? '💳 ' : '') + f.n + (f.term ? ' ·' + f.term : '') + (num(f.m) ? ' · ' + money(num(f.m), f.mon) : '') }))] },
       { k: 'ic', label: 'Ícono', type: 'icon', def: tp === 'banco' ? 'bank' : 'user' },
@@ -6851,18 +6887,23 @@ function formPrest(id, tipo) {
       const t = p || { id: uid() };
       const antes = p ? { tasa: num(p.tasa), cap: p.cap, capFecha: p.capFecha, fijoId: p.fijoId || '' } : {};
       if (o.tasa > 0) {
-        if (!(o.cap > 0)) o.cap = p ? Math.max(0, saldoPrestamoV2(p)) : o.m;
+        if (!(o.cap > 0)) o.cap = pre ? pre.cap : p ? Math.max(0, saldoPrestamoV2(p)) : o.m;
         if (!o.capFecha) o.capFecha = hoyISO();
-        if (!(o.cap > 0)) return 'Pon el capital pendiente (lo que te dice el banco)';
-        if (!p || !conInteres(p)) o.capTs = new Date().toISOString();
-        else if (Math.abs(num(p.cap) - o.cap) > 0.009 || p.capFecha !== o.capFecha) o.capTs = new Date().toISOString(); // el usuario puso el saldo del banco
-        else if (num(p.tasa) !== o.tasa || (num(p.base) || 365) !== o.base) { const i = prestInfo(p); o.cap = Math.round(i.saldo * 100) / 100; o.capFecha = hoyISO(); o.capTs = new Date().toISOString(); } // nueva tasa desde hoy, sin perder el interés ya generado
-        else { o.cap = p.cap; o.capFecha = p.capFecha; o.capTs = p.capTs; }
-      } else { o.tasa = 0; delete o.cap; delete o.capFecha; if (p) { delete p.cap; delete p.capFecha; delete p.capTs; } }
+        if (!(o.cap > 0)) return 'Pon el balance que te dice el banco';
+        if (o.capFecha > hoyISO()) return 'La fecha del balance no puede ser en el futuro';
+        if (!o.intDesde) o.intDesde = pre && o.capFecha === pre.capFecha ? pre.intDesde : o.capFecha;
+        if (o.intDesde > o.capFecha) return 'La fecha de tu último pago no puede ser después de la fecha del balance';
+        const cambioSaldo = pre && (Math.abs(pre.cap - o.cap) > 0.009 || pre.capFecha !== o.capFecha || pre.intDesde !== o.intDesde);
+        if (!pre) { o.capTs = new Date().toISOString(); o.intIni = 0; o.intIniDesde = undefined; }
+        else if (cambioSaldo) { o.capTs = new Date().toISOString(); o.intIni = 0; o.intIniDesde = undefined; } // el usuario puso el balance del banco
+        else if (num(p.tasa) !== o.tasa || (num(p.base) || 365) !== o.base) { o.cap = pre.cap; o.intIni = Math.round(i0.interes * 100) / 100; o.intIniDesde = i0.desde; o.capFecha = hoyISO(); o.intDesde = hoyISO(); o.capTs = new Date().toISOString(); } // nueva tasa desde hoy, sin perder el interés ya generado
+        else { o.cap = p.cap; o.capFecha = p.capFecha; o.intDesde = p.intDesde; o.intIni = p.intIni; o.intIniDesde = p.intIniDesde; o.capTs = p.capTs; } // no tocaste el balance: queda exactamente igual
+      } else { o.tasa = 0; delete o.cap; delete o.capFecha; delete o.intDesde; if (p) { delete p.cap; delete p.capFecha; delete p.capTs; delete p.intDesde; delete p.intIni; delete p.intIniDesde; } }
       if (!o.fijoId && o.term && (!p || !p.fijoId)) { const fx = S.cfg.fijos.find(f => f.term && f.term === o.term && !S.cfg.prestamos.some(q => q !== p && q.fijoId === f.id)); if (fx) o.fijoId = fx.id; }
       if ((o.fijoId || '') !== (antes.fijoId || '')) { const now = new Date().toISOString(); if (p && p.fijoId) o.fijoHist = [...(p.fijoHist || []), { fijoId: p.fijoId, desde: p.vinculoTs || '', hasta: now }]; o.vinculoTs = now; }
       if (!o.ic) o.ic = o.tipo === 'banco' ? 'bank' : 'user';
       Object.assign(t, o);
+      for (const k of ['intDesde', 'intIni', 'intIniDesde']) if (t[k] === undefined) delete t[k];
       if (!p) S.cfg.prestamos.push(t);
       saveCfg();
       if (o.fijoId && o.fijoId !== (antes.fijoId || '')) setTimeout(() => prPreguntarPagoPrevio(t), 400);
@@ -6871,16 +6912,23 @@ function formPrest(id, tipo) {
   // Mostrar los campos de interés solo cuando hacen falta
   const sync = () => {
     const tasa = num($('#g_tasa')?.value);
-    for (const k of ['cap', 'capFecha', 'base']) { const el = $('#g_' + k)?.closest('label'); if (el) el.hidden = !(tasa > 0); }
+    for (const k of ['cap', 'capFecha', 'intDesde', 'base']) { const el = $('#g_' + k)?.closest('label'); if (el) el.hidden = !(tasa > 0); }
   };
   $('#g_tasa')?.addEventListener('input', sync); sync();
 }
 function prSaldo(id) {
   const p = S.cfg.prestamos.find(x => x.id === id), i = prestInfo(p);
-  openForm({ title: 'Actualizar saldo de ' + p.n, values: { cap: Math.round(i.capital * 100) / 100, capFecha: hoyISO() },
-    note: 'Escribe el capital pendiente que te muestra el banco (sin intereses). Desde esa fecha vuelvo a calcular el interés de cada día.',
-    fields: [{ k: 'cap', label: 'Capital pendiente', type: 'num' }, { k: 'capFecha', label: 'Fecha', type: 'date' }],
-    onSave: o => { if (!(o.cap >= 0)) return 'Pon el capital'; Object.assign(p, { cap: o.cap, capFecha: o.capFecha || hoyISO(), capTs: new Date().toISOString() }); saveCfg(); } });
+  openForm({ title: 'Actualizar saldo de ' + p.n, values: { cap: Math.round(i.capital * 100) / 100, capFecha: hoyISO(), intDesde: i.desde },
+    note: 'Escribe el “Balance a la fecha” que te muestra el banco y la fecha de tu último pago de cuota. Desde ese pago calculo el interés de cada día.',
+    fields: [{ k: 'cap', label: 'Balance a la fecha (según el banco)', type: 'num' }, { k: 'capFecha', label: 'Fecha de ese balance', type: 'date' }, { k: 'intDesde', label: 'Fecha de tu último pago de cuota', type: 'date' }],
+    onSave: o => {
+      if (!(o.cap >= 0)) return 'Pon el balance que te dice el banco';
+      const cf = o.capFecha || hoyISO(), dd = o.intDesde || cf, c0 = Math.round(i.capital * 100) / 100;
+      if (cf > hoyISO()) return 'La fecha del balance no puede ser en el futuro';
+      if (dd > cf) return 'La fecha de tu último pago no puede ser después de la fecha del balance';
+      if (Math.abs(o.cap - c0) <= 0.009 && cf === hoyISO() && dd === i.desde) return; // no cambiaste nada: queda igual
+      Object.assign(p, { cap: o.cap, capFecha: cf, intDesde: dd, intIni: 0, capTs: new Date().toISOString() }); delete p.intIniDesde; saveCfg();
+    } });
 }
 
 /* ---------- Cuentas por cobrar ---------- */
@@ -6988,7 +7036,7 @@ function prPreguntarPagoPrevio(p) {
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act=prVincSi],[data-act=prVincNo]'); if (!b) return;
-  if (b.dataset.act === 'prVincSi') { const p = S.cfg.prestamos.find(x => x.id === b.dataset.id); if (p) { p.vinculoTs = new Date(Date.parse(b.dataset.v || '') - 1 || 0).toISOString(); saveCfg(); } toast('Listo: la cuota se descontó del préstamo ✓'); }
+  if (b.dataset.act === 'prVincSi') { const p = S.cfg.prestamos.find(x => x.id === b.dataset.id); if (p) { p.vinculoTs = new Date(Date.parse(b.dataset.v || '') - 1 || 0).toISOString(); if (p.capTs && p.capTs > p.vinculoTs) p.capTs = p.vinculoTs; saveCfg(); } toast('Listo: la cuota se descontó del préstamo ✓'); }
   else toast('Listo, conectada sin descontar ✓');
   closeSheet(); render();
 });
@@ -7341,6 +7389,145 @@ function perPreview(t) {
     <div class="tiny muted" style="margin-top:4px">Solo cuenta como gasto en los meses que te toca. ${t.ayuda > 0 ? 'La ayuda anótala en Plan → Extras cuando te llegue.' : ''}</div>`;
 }
 
+/* ============ Guardar a la primera (v1.7.2 · robustez) ============
+   Problema: en el iPhone a veces había que tocar "Guardar" varias veces.
+   1) Toque con el teclado abierto: iOS cierra el teclado durante el toque, la hoja se mueve y el
+      "click" cae fuera del botón. Si el dedo empieza y termina en el mismo botón (sin arrastrar),
+      lo activamos nosotros una sola vez.
+   2) Los errores de validación salían en un aviso abajo, tapado por el teclado: ahora salen dentro
+      de la hoja, encima de los botones (y el aviso de abajo sube por encima del teclado).
+   3) Si algo falla al guardar, se avisa y la hoja no se cierra.
+   4) Doble toque rápido: el segundo toque no repite la acción ni toca lo que queda debajo.
+   5) Sincronización: si la nube trae una versión más nueva mientras hay una hoja abierta,
+      la configuración se aplica al cerrarla (antes, lo que guardabas en esa hoja se perdía). */
+const RB = { tap: null, ult: null, sint: null, espera: [], fusPend: false, lsAviso: false };
+const rbHojaAbierta = () => { const w = document.getElementById('sheetWrap'); return !!(w && !w.hidden); };
+function rbEsperarHoja() { return new Promise(r => RB.espera.push(r)); }
+function rbHojaCerrada() { const l = RB.espera; RB.espera = []; l.forEach(f => { try { f(); } catch (e) {} }); }
+// La nube trajo una configuración más nueva con una hoja abierta: se vuelve a sincronizar al cerrarla
+function rbFusionarLuego(db, id) {
+  if (RB.fusPend) return; RB.fusPend = true;
+  rbEsperarHoja().then(() => setTimeout(() => { RB.fusPend = false; if (DB === db && UIDV === id) fusionar(db, id); }, 0));
+}
+function rbLsFallo(e) {
+  console.warn('lsSave', e);
+  if (RB.lsAviso) return; RB.lsAviso = true;
+  setTimeout(() => toast(DB ? 'Este dispositivo no tiene espacio para la copia local; tus datos se guardan en tu cuenta' : 'No pude guardar en este dispositivo (sin espacio). Descarga un respaldo en Ajustes'), 50);
+}
+
+/* ---------- Errores dentro de la hoja (visibles aunque el teclado esté abierto) ---------- */
+function avisoHoja(msg, btn) {
+  const sh = document.getElementById('sheet');
+  if (!rbHojaAbierta() || !sh || !sh.firstElementChild) { toast(msg); return; }
+  const txt = typeof gx === 'function' ? gx(msg) : String(msg);
+  let box = sh.querySelector('.rb-err');
+  if (!box) { box = document.createElement('div'); box.className = 'rb-err'; box.setAttribute('role', 'alert'); }
+  box.innerHTML = svgI('alert', 18, 2.2) + '<span></span>';
+  box.lastChild.textContent = txt;
+  const b = btn || (RB.ultBtn && Date.now() - RB.ultBtn.t < 1500 ? RB.ultBtn.b : null);
+  const ancla = (b && sh.contains(b) && b.closest('.btns')) || [...sh.querySelectorAll('.btns')].pop();
+  if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(box, ancla);
+  else { const h = sh.querySelector('.sheet-h'); if (h) h.after(box); else sh.prepend(box); }
+  box.classList.remove('rb-sacude'); void box.offsetWidth; box.classList.add('rb-sacude');
+  const ver = () => { if (!box.isConnected) return; try { if (ancla && ancla.isConnected) ancla.scrollIntoView({ block: 'nearest' }); box.scrollIntoView({ block: 'nearest' }); } catch (e) {} }; // el aviso y el botón a la vista
+  ver(); setTimeout(ver, 380); // otra vez cuando el teclado termina de cerrarse
+  // Teclado todavía abierto (p. ej. se envió con "Ir"): también arriba del teclado
+  if (document.documentElement.classList.contains('rb-kb') && rbEsCampo(document.activeElement)) toast(msg);
+}
+// Al corregir, el aviso se va
+document.addEventListener('input', e => { const t = e.target; if (t && t.closest && t.closest('#sheet')) { const x = document.querySelector('#sheet .rb-err'); if (x) x.remove(); } }, true);
+function rbFallo(ex, donde) {
+  console.error('No se pudo guardar (' + donde + ')', ex);
+  avisoHoja('Algo falló y esto no se guardó. Tus otros datos están bien: revisa y toca Guardar otra vez.');
+}
+const rbRender = () => { try { render(); } catch (e) { console.error('render', e); } };
+
+/* ---------- Movimiento: nunca dos veces, y si algo falla se sabe ---------- */
+function rbEnDatos(t) { return Object.values(S.months || {}).some(mm => (mm.movs || []).includes(t)); }
+function rbGuardarMov() {
+  if (!SH || !SH.t) return;
+  const t = SH.t, antes = SH.editId && S.months[SH.editMes] ? { m: SH.editMes, movs: S.months[SH.editMes].movs } : null;
+  try { guardarMov(); }
+  catch (ex) {
+    if (!rbEnDatos(t) && antes && S.months[antes.m]) S.months[antes.m].movs = antes.movs; // editar falló a medias: queda como estaba
+    if (rbEnDatos(t)) { // ya quedó anotado: se guarda en el dispositivo y se cierra, sin repetirlo
+      console.error('guardarMov (después de guardar)', ex);
+      try { saveMes(mesDe(t.fecha)); if (SH && SH.editMes && SH.editMes !== mesDe(t.fecha)) saveMes(SH.editMes); } catch (e) { lsSave(); }
+      closeSheet(); rbRender(); toast('Guardado');
+    } else rbFallo(ex, 'movimiento');
+  }
+}
+function rbGuardarForm(e) {
+  if (!SH || typeof SH.onSave !== 'function') return;
+  let err;
+  try { err = SH.onSave(leerForm()); } catch (ex) { rbFallo(ex, 'formulario'); return; }
+  if (typeof err === 'string') { avisoHoja(err, e && e.submitter); return; }
+  closeSheet(); rbRender(); toast('Guardado');
+}
+
+/* ---------- Toque con el teclado abierto (iPhone) ---------- */
+const RB_NO_TEXTO = /^(checkbox|radio|button|submit|reset|file|range|color|image|hidden)$/i;
+const rbEsCampo = el => !!el && el !== document.body && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !RB_NO_TEXTO.test(el.type || '')) || el.isContentEditable === true);
+function rbBoton(t) {
+  const b = t && t.closest ? t.closest('button, input[type=submit], input[type=button]') : null;
+  if (!b || b.disabled) return null;
+  if (b.closest('.hn, .hn-burb, .hn-tour')) return null; // el chat de Hannah sigue como siempre
+  return b;
+}
+const rbCerca = (a, x, y, r) => Math.hypot(a.x - x, a.y - y) <= r;
+// Doble toque: el segundo, en el mismo sitio justo después de cerrar o cambiar la hoja, no hace nada
+const rbEsDoble = (x, y) => !!(RB.ult && Date.now() - RB.ult.t < 420 && rbCerca(RB.ult, x, y, 32));
+addEventListener('touchstart', e => {
+  RB.tap = null; RB.sint = null; // un toque nuevo es del usuario: ya no es el "click" repetido del navegador
+  if (e.touches.length !== 1) return;
+  const p = e.touches[0], act = document.activeElement;
+  if (!rbEsCampo(act) || act.closest('.hn')) return;
+  const b = rbBoton(e.target);
+  if (!b) return;
+  RB.tap = { b, x: p.clientX, y: p.clientY, t: Date.now() };
+}, { capture: true, passive: true });
+addEventListener('touchmove', e => { const tp = RB.tap, p = e.touches[0]; if (tp && p && !rbCerca(tp, p.clientX, p.clientY, 10)) RB.tap = null; }, { capture: true, passive: true });
+addEventListener('touchcancel', () => { RB.tap = null; }, true);
+addEventListener('touchend', e => {
+  const tp = RB.tap; RB.tap = null;
+  if (!tp || !e.cancelable || e.touches.length) return;
+  const p = e.changedTouches[0];
+  if (!p || !rbCerca(tp, p.clientX, p.clientY, 10) || Date.now() - tp.t > 800) return; // arrastre o toque largo: lo maneja el navegador
+  const b = tp.b; if (!b.isConnected || b.disabled) return;
+  e.preventDefault(); // sin "click" del navegador: lo damos nosotros una sola vez
+  if (rbEsDoble(tp.x, tp.y)) return;
+  const act = document.activeElement; if (rbEsCampo(act)) act.blur(); // igual que el navegador: primero se suelta el campo
+  RB.sint = { b, x: tp.x, y: tp.y, t: Date.now() };
+  b.click();
+}, { capture: true, passive: false });
+
+/* ---------- Clics: anota el botón y bloquea repeticiones ---------- */
+addEventListener('click', e => {
+  const now = Date.now();
+  const s = RB.sint && now - RB.sint.t < 1000 ? RB.sint : null;
+  const x = e.isTrusted ? e.clientX : s ? s.x : null, y = e.isTrusted ? e.clientY : s ? s.y : null;
+  // El navegador mandó su propio click después del nuestro (sin un toque nuevo en medio): se ignora
+  if (e.isTrusted && e.detail !== 0 && s && now - s.t < 600) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  if (e.isTrusted && e.detail !== 0 && x != null && rbEsDoble(x, y)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  const b = e.target && e.target.closest ? e.target.closest('button, input[type=submit]') : null;
+  if (!b || !b.closest('#sheetWrap')) return;
+  RB.ultBtn = { b, t: now };
+  if (x == null || (x === 0 && y === 0 && !e.isTrusted)) return;
+  const sh0 = SH;
+  setTimeout(() => { if (SH !== sh0) RB.ult = { x, y, t: Date.now() }; }, 0);
+}, true);
+
+/* ---------- El aviso de abajo sube por encima del teclado ---------- */
+function rbTeclado() {
+  const vv = window.visualViewport; if (!vv) return;
+  const H = document.documentElement.clientHeight || window.innerHeight;
+  const tapa = Math.round(H - (vv.offsetTop + vv.height));
+  const root = document.documentElement;
+  if (tapa > 80) { root.style.setProperty('--rb-kb', tapa + 'px'); root.classList.add('rb-kb'); }
+  else if (root.classList.contains('rb-kb')) { root.classList.remove('rb-kb'); root.style.removeProperty('--rb-kb'); }
+}
+try { if (window.visualViewport) { visualViewport.addEventListener('resize', rbTeclado); visualViewport.addEventListener('scroll', rbTeclado); } } catch (e) {}
+
 /* ============ Eventos ============ */
 document.addEventListener('click', async e => {
   if (S.infoOpen && !e.target.closest('.info-wrap')) setInfo(false);
@@ -7367,7 +7554,7 @@ document.addEventListener('click', async e => {
     case 'tema': { const t = temaActual() === 'dark' ? 'light' : 'dark'; aplicarTema(t); S.cfg.tema = t; try { localStorage.setItem(LS_BASE + '-tema', t); } catch (e) {} saveCfg(); render(); toast(t === 'dark' ? 'Modo oscuro' : 'Modo claro'); break; }
     case 'info': showInfo(v); break;
     case 'montoFijo': editMontoFijo(id); break;
-    case 'mfSolo': case 'mfTodos': guardarMontoFijo(a === 'mfTodos'); break;
+    case 'mfSolo': case 'mfTodos': try { guardarMontoFijo(a === 'mfTodos'); } catch (ex) { rbFallo(ex, 'monto del fijo'); } break;
     case 'ingExtra': openMov({ tipo: 'ingreso', metodo: 'debito', nota: '' }); break;
     case 'cats': verCats(); break;
     case 'formCat': formCat(id); break;
@@ -7397,7 +7584,7 @@ document.addEventListener('click', async e => {
     case 'mDest': SH.t.destino = v; const d = tarjeta(v); if (d) { SH.t.mon = d.mon; if (!num($('#mMonto').value)) $('#mMonto').value = saldoTC(d) > 0 ? saldoTC(d) : ''; } syncMovInputs(); drawMov(); break;
     case 'mCuenta': SH.t.cuentaId = SH.t.cuentaId === v ? '' : v; syncMovInputs(); drawMov(); break;
     case 'mMeta': SH.t.metaId2 = SH.t.metaId2 === v ? '' : v; syncMovInputs(); drawMov(); break;
-    case 'mGuardar': { const nuevo = !SH.editId, t0 = SH.t; guardarMov(); if (nuevo && $('#sheetWrap').hidden && typeof hnTrasMov === 'function') { hnTrasMov(t0); perTrasPago(t0); } break; }
+    case 'mGuardar': { const nuevo = !SH.editId, t0 = SH.t; rbGuardarMov(); if (nuevo && $('#sheetWrap').hidden && typeof hnTrasMov === 'function') { hnTrasMov(t0); perTrasPago(t0); } break; }
     case 'mBorrar':
       if (!v) { syncMovInputs(); SH.confirmDel = true; drawMov(); break; }
       { const mm = M(SH.editMes); mm.movs = mm.movs.filter(x => x.id !== SH.editId); saveMes(SH.editMes); closeSheet(); render(); toast('Movimiento borrado'); }
@@ -7433,12 +7620,12 @@ document.addEventListener('click', async e => {
     case 'formExtra': formExtra(id, v); break;
     case 'exTipo': EXF.tipo = v; exRead(); drawExtra(); break;
     case 'exSeg': exRead(); EXF.seguro = v === '1'; drawExtra(); break;
-    case 'exGuardar': guardarExtra(); break;
+    case 'exGuardar': try { guardarExtra(); } catch (ex) { rbFallo(ex, 'extra'); } break;
     case 'exBorrar': if (!EXF.confirm) { EXF.confirm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger'; break; } S.cfg.extras = S.cfg.extras.filter(x => x.id !== EXF.id); saveCfg(); closeSheet(); render(); toast('Eliminado'); break;
     case 'recibir': { const x = S.cfg.extras.find(e => e.id === id); closeSheet(); openMov({ tipo: 'ingreso', monto: x.monto, metodo: 'debito', nota: x.n, extraId: x.id, fecha: x.mes === mesActual() ? hoyISO() : (x.mes < mesActual() ? x.mes + '-28' : hoyISO()) }); break; }
     case 'navidad': openNavidad(+v || +S.mes.slice(0, 4)); break;
     case 'nvApp': nvLlenar('app'); break;
-    case 'nvFill': { nvRead(); const sd = Math.round(num(NV.sueldo) * 100) / 100; if (!(sd > 0)) { toast('Escribe tu sueldo actual'); break; } const mA = +mesActual().slice(5) - 1, esteAnio = NV.y === +mesActual().slice(0, 4); let n = 0; NV.meses = NV.meses.map((x, k) => { const ok = v === 'todos' || (v === 'vacios' && !(num(x) > 0)) || (v === 'resto' && esteAnio && k >= mA); if (ok) n++; return ok ? sd : x; }); drawNavidad(); nvAutoSave(); toast(n ? `Rellené ${n} mes${n > 1 ? 'es' : ''} con ${money(sd)}` : 'No había meses vacíos'); break; }
+    case 'nvFill': { nvRead(); const sd = Math.round(num(NV.sueldo) * 100) / 100; if (!(sd > 0)) { avisoHoja('Escribe tu sueldo actual'); break; } const mA = +mesActual().slice(5) - 1, esteAnio = NV.y === +mesActual().slice(0, 4); let n = 0; NV.meses = NV.meses.map((x, k) => { const ok = v === 'todos' || (v === 'vacios' && !(num(x) > 0)) || (v === 'resto' && esteAnio && k >= mA); if (ok) n++; return ok ? sd : x; }); drawNavidad(); nvAutoSave(); toast(n ? `Rellené ${n} mes${n > 1 ? 'es' : ''} con ${money(sd)}` : 'No había meses vacíos'); break; }
     case 'nvSueldo': nvLlenar('sueldo'); break;
     case 'nvBon': nvRead(); NV.bon = !NV.bon; drawNavidad(); nvAutoSave(); break;
     case 'nvVac': nvRead(); NV.vac = !NV.vac; if (NV.vac && !navDatos(NV.y)?.mesVac && NV.ingreso) NV.mesVac = NV.y + '-' + NV.ingreso.slice(5, 7); drawNavidad(); nvAutoSave(); break;
@@ -7503,7 +7690,7 @@ document.addEventListener('submit', e => {
   e.preventDefault();
   if (e.target.id === 'auForm') { auEnviar(); return; }
   if (e.target.id === 'passForm') { guardarPass(); return; }
-  if (e.target.id === 'gForm') { const err = SH.onSave(leerForm()); if (typeof err === 'string') { toast(err); return; } closeSheet(); render(); toast('Guardado'); }
+  if (e.target.id === 'gForm') { rbGuardarForm(e); return; }
   if (e.target.id === 'aForm') {
     S.cfg.nombre = $('#aNombre').value.trim() || S.cfg.nombre; S.cfg.tasa = num($('#aTasa').value) || 65;
     S.cfg.ahorro.emerg = num($('#aEm').value); S.cfg.ahorro.sal = num($('#aSal').value);
