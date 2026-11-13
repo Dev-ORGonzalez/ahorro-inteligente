@@ -765,6 +765,30 @@ body.pf-on .hn-btn,body.pf-on .hn-burb{display:none!important}
 .pr-hero span b{font-family:inherit;font-size:inherit;letter-spacing:0}
 .pr-hero span{font-size:14px;opacity:.92;line-height:1.35}
 .pr-hero .pr-saldar{margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.22);opacity:1}
+/* ---------- País y moneda ---------- */
+.pais-pk{position:relative}
+.pais-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;font:inherit;font-weight:600;color:var(--ink)}
+.pais-btn svg{flex:none;color:var(--muted)}
+.pais-f{font-size:22px;line-height:1;flex:none}
+.pais-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pais-pop{margin-top:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:8px;display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.pais-pop[hidden]{display:none}
+.pais-list{max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:2px;overscroll-behavior:contain}
+.pais-op{display:flex;align-items:center;gap:10px;padding:10px;border:0;border-radius:12px;background:transparent;color:var(--ink);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.pais-op:hover,.pais-op:focus-visible{background:var(--surface-2);outline:none}
+.pais-op.on{background:var(--accent-soft);font-weight:700}
+.pf-mon{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.pf-mon button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pf-mon button b{font-size:20px}
+.pf-mon button span{font-size:13px;color:var(--muted)}
+.pf-mon button.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.pf-mon button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pf-modo{display:grid;gap:10px}
+.pf-op{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:14px;cursor:pointer;background:var(--surface-2)}
+.pf-op input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.pf-op>span{display:grid;gap:2px}
+.pf-op:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.pf-bandera{font-size:.7em;vertical-align:.12em}
 /* ===== Modo Navidad (html.navidad, lo activa navidad.js solo en diciembre) =====
    Rojo navideño para la marca y los botones; el verde (--accent) se queda como color de "positivo/ingreso"
    para no cambiar el significado de los montos. */
@@ -966,8 +990,11 @@ const diasEntre = (a, b) => Math.round((new Date(b.getFullYear(), b.getMonth(), 
 const sum = (arr, f) => arr.reduce((a, x) => a + (Number(f ? f(x) : x) || 0), 0);
 const num = v => { const n = parseFloat(String(v).replace(/,/g, '')); return isFinite(n) ? n : 0; };
 const fmtN = (n, dec = 2) => (Number(n) || 0).toLocaleString('es-DO', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-const money = (n, cur = 'RD') => (n < 0 ? '−' : '') + (cur === 'US' ? 'US$' : 'RD$') + fmtN(Math.abs(n), 2);
-const moneyC = n => { const a = Math.abs(n); const s = a >= 1e6 ? fmtN(a / 1e6, 2) + 'M' : a >= 1e4 ? fmtN(a / 1e3, 1) + 'k' : fmtN(a, 0); return (n < 0 ? '−' : '') + 'RD$' + s; };
+// Moneda principal del usuario (RD o US). Todo total se muestra en ella.
+function MB() { return (S && S.cfg && S.cfg.moneda === 'US') ? 'US' : 'RD'; }
+function SYM(m) { return (m || MB()) === 'US' ? 'US$' : 'RD$'; }
+const money = (n, cur) => (n < 0 ? '−' : '') + SYM(cur || MB()) + fmtN(Math.abs(n), 2);
+const moneyC = n => { const a = Math.abs(n); const s = a >= 1e6 ? fmtN(a / 1e6, 2) + 'M' : a >= 1e4 ? fmtN(a / 1e3, 1) + 'k' : fmtN(a, 0); return (n < 0 ? '−' : '') + SYM() + s; };
 const fechaLarga = s => parseISO(s).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' });
 const fechaCorta = d => d.getDate() + ' ' + MES3[d.getMonth()];
 
@@ -1153,8 +1180,9 @@ function plantilla() {
 const S = { cfg: null, months: {}, mes: mesActual(), tab: 'inicio', filtro: { q: '', metodo: '', cat: '' }, sync: 'local' };
 const M = m => (S.months[m] ||= { movs: [], ing: {}, tickets: 0 });
 const allMovs = () => Object.values(S.months).flatMap(x => x.movs || []);
-const toRD = (monto, mon) => mon === 'US' ? monto * S.cfg.tasa : monto;
-const conv = (monto, de, a) => de === a ? monto : (a === 'US' ? monto / S.cfg.tasa : monto * S.cfg.tasa);
+// Convierte a la moneda principal (se llama toRD por historia: en RD siempre fue a pesos)
+const toRD = (monto, mon) => conv(monto, mon || MB(), MB());
+const conv = (monto, de, a) => de === a ? monto : (a === 'US' ? monto / (num(S.cfg.tasa) || 65) : monto * (num(S.cfg.tasa) || 65));
 const cat = id => S.cfg.categorias.find(c => c.id === id) || { id: 'otros', n: 'Otros', c: '#8A8A74' };
 const tarjeta = id => S.cfg.tarjetas.find(t => t.id === id);
 const METODOS_FIJOS = [{ id: 'efectivo', n: 'Efectivo', c: '#4E7D5F' }, { id: 'debito', n: 'Débito', c: '#3E6C8F' }, { id: 'transferencia', n: 'Transferencia', c: '#6C6C8F' }];
@@ -1401,14 +1429,14 @@ function vInicio() {
   const porOtros = METODOS_FIJOS.map(mm => ({ mm, g: sum(M(S.mes).movs.filter(t => t.tipo === 'gasto' && t.metodo === mm.id), t => toRD(t.monto, t.mon)) })).filter(x => x.g > 0);
 
   return `
-  <header class="top"><img class="logo" alt="" src="${document.querySelector('link[rel=apple-touch-icon]')?.href || ''}"><div class="grow"><div class="eyebrow">${saludo()}</div><h1>${esc(cfg.nombre)}</h1></div>
+  <header class="top"><img class="logo" alt="" src="${document.querySelector('link[rel=apple-touch-icon]')?.href || ''}"><div class="grow"><div class="eyebrow">${saludo()}</div><h1>${esc(cfg.nombre)}${banderaU() ? ` <span class="pf-bandera" title="${esc(paisNombre(paisU()))}">${banderaU()}</span>` : ''}</h1></div>
     ${monthSwitch()}${temaBtn()}<button class="icon-btn" data-act="ajustes" aria-label="Ajustes">${ICON.gear}</button></header>
   <div class="stack-lg">
     <section class="note">
       <span class="coin" style="bottom:auto;top:44px">${svgI('coin', 78, 1.2)}</span>
-      <div class="serial">RD$ · ${MES3[+S.mes.slice(5) - 1].toUpperCase()} ${S.mes.slice(0, 4)}</div>
+      <div class="serial">${SYM()} · ${MES3[+S.mes.slice(5) - 1].toUpperCase()} ${S.mes.slice(0, 4)}</div>
       <div class="eyebrow">${r.libre >= 0 ? 'Te queda para ahorrar' : 'Te estás pasando por'}<button class="info-b" data-act="info" data-v="libre" aria-label="¿Qué es esto?">?</button></div>
-      <div class="big"><small>RD$</small><span data-count="${Math.round(Math.abs(r.libre))}">${fmtN(Math.abs(r.libre), 0)}</span></div>
+      <div class="big"><small>${SYM()}</small><span data-count="${Math.round(Math.abs(r.libre))}">${fmtN(Math.abs(r.libre), 0)}</span></div>
       <div class="small" style="color:var(--note-muted);margin-top:4px">de ${money(r.ingreso)} de ingresos${r.ingSeguro ? ` (incluye ${moneyC(r.ingSeguro)} por recibir)` : ''} · ${r.ingreso > 0 ? Math.round(r.libre / r.ingreso * 100) : 0}% del mes</div>
       <div class="bar"><i style="width:${pF}%;background:#F2C35B"></i><i style="width:${pV}%;background:#F28A6B"></i></div>
       <div class="legend">
@@ -1510,7 +1538,7 @@ function itemMov(t) {
   return `<button class="item" data-act="editMov" data-id="${t.id}" data-m="${mesDe(t.fecha)}">
     <span class="badge" style="background:${color}">${svgI(ik)}</span>
     <div class="grow"><div class="t">${esc(titulo)}</div><div class="s">${esc(sub)} · ${fechaCorta(parseISO(t.fecha))}</div></div>
-    <div class="num right"><b class="${cls}">${signo}${money(t.monto, t.mon)}</b>${t.mon === 'US' ? `<div class="tiny muted">${money(toRD(t.monto, 'US'))}</div>` : ''}</div>
+    <div class="num right"><b class="${cls}">${signo}${money(t.monto, t.mon)}</b>${t.mon && t.mon !== MB() ? `<div class="tiny muted">${money(toRD(t.monto, t.mon))}</div>` : ''}</div>
   </button>`;
 }
 
@@ -1735,7 +1763,7 @@ function vAhorro() {
     <section class="note">
       <div class="serial">REGLA ${cfg.ahorro.emerg}% + ${cfg.ahorro.sal}%</div>
       <div class="eyebrow">Ahorro sugerido este mes</div>
-      <div class="big"><small>RD$</small>${fmtN(r.reglaTotal, 0)}</div>
+      <div class="big"><small>${SYM()}</small>${fmtN(r.reglaTotal, 0)}</div>
       <div class="small" style="color:var(--note-muted);margin-top:4px">${money(r.reglaEmerg)} fondo de emergencia + ${money(r.reglaSal)} del salario</div>
       <div class="bar"><i style="width:${r.reglaTotal ? Math.min(100, r.ahorrado / r.reglaTotal * 100) : 0}%;background:#8FE0B9"></i></div>
       <div class="small" style="margin-top:8px">Apartado: <b>${money(r.ahorrado)}</b> · ${r.reglaTotal ? Math.round(r.ahorrado / r.reglaTotal * 100) : 0}%</div>
@@ -1782,7 +1810,7 @@ function barChart(d) {
 let SH = null; // estado de la hoja abierta
 function openSheet(html, ctx) { SH = ctx || {}; $('#sheet').innerHTML = gx(html); $('#sheetWrap').hidden = false; document.body.style.overflow = 'hidden'; setTimeout(() => { const a = $('#sheet [autofocus]'); if (a) a.focus(); }, 60); }
 function closeSheet() { if (NV && $('#nv_live')) { clearTimeout(nvAutoSave.t); guardarNavidadDatos(); NV = null; render(); } $('#sheetWrap').hidden = true; $('#sheet').innerHTML = ''; SH = null; document.body.style.overflow = ''; if (typeof rbHojaCerrada === 'function') rbHojaCerrada(); }
-function toast(t) { const el = $('#toast'); el.textContent = gx(t); el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); }
+function toast(t) { const el = $('#toast'); { const sv = $('#saved'); if (sv && !esDesk()) sv.hidden = true; } el.textContent = gx(t); el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); }
 const sheetH = t => `<div class="sheet-h"><h2>${esc(t)}</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ICON.x}</button></div>`;
 
 /* Movimiento */
@@ -1791,7 +1819,7 @@ function openMov(pre = {}, editId = null, editMes = null) {
   if (editId) { t = { ...M(editMes).movs.find(x => x.id === editId) }; }
   else {
     const last = allMovs().filter(x => x.tipo === 'gasto').sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))[0];
-    t = { tipo: 'gasto', monto: '', mon: 'RD', cat: 'alimentacion', metodo: last?.metodo || 'efectivo', fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-01', nota: '', ...pre };
+    t = { tipo: 'gasto', monto: '', mon: MB(), cat: 'alimentacion', metodo: last?.metodo || 'efectivo', fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-01', nota: '', ...pre };
   }
   SH = { t, editId, editMes, confirmDel: false };
   drawMov();
@@ -1809,7 +1837,7 @@ function drawMov() {
     ${lockTipo ? '' : `<div class="seg">${[['gasto', 'Gasto'], ['ingreso', 'Ingreso'], ['pago_tc', 'Pago TC'], ['ahorro', 'Ahorro']].map(([k, n]) => `<button class="${t.tipo === k ? 'on' : ''}" data-act="mTipo" data-v="${k}">${n}</button>`).join('')}</div>`}
     <div class="amount"><span>${t.mon === 'US' ? 'US$' : 'RD$'}</span><input id="mMonto" inputmode="decimal" placeholder="0.00" value="${t.monto === '' ? '' : esc(t.monto)}" data-act="mMonto" aria-label="Monto"></div>
     <div class="row" style="justify-content:center"><div class="seg" style="width:180px"><button class="${t.mon === 'RD' ? 'on' : ''}" data-act="mMon" data-v="RD">RD$</button><button class="${t.mon === 'US' ? 'on' : ''}" data-act="mMon" data-v="US">US$</button></div></div>
-    ${t.mon === 'US' ? `<div class="tiny muted" style="text-align:center">≈ ${money(toRD(num(t.monto), 'US'))} a tasa ${S.cfg.tasa}</div>` : ''}
+    ${t.mon !== MB() ? `<div class="tiny muted" style="text-align:center">≈ ${money(toRD(num(t.monto), t.mon))} a tasa ${S.cfg.tasa}</div>` : ''}
     ${t.tipo === 'gasto' && !t.fijoId && !t.prestamoId ? `<div><div class="eyebrow" style="margin-bottom:7px">Categoría</div><div class="chips">${S.cfg.categorias.map(c => `<button class="chip-b ${t.cat === c.id ? 'on' : ''}" data-act="mCat" data-v="${c.id}"><span class="ci" style="background:${c.c}">${svgI(icC(c), 14, 2.1)}</span>${esc(c.n)}</button>`).join('')}</div></div>` : ''}
     ${t.tipo === 'pago_tc' ? `<div><div class="eyebrow" style="margin-bottom:7px">Tarjeta que pagas</div><div class="chips">${S.cfg.tarjetas.map(c => `<button class="chip-b ${t.destino === c.id ? 'on' : ''}" data-act="mDest" data-v="${c.id}"><i style="background:${c.color}"></i>${esc(c.n)} · ${money(saldoTC(c), c.mon)}</button>`).join('')}</div></div>` : ''}
     ${t.tipo === 'ahorro' && cuentasA().length ? `<div><div class="eyebrow" style="margin-bottom:7px">¿Dónde lo guardas?</div><div class="chips">${cuentasA().map(c => `<button class="chip-b ${t.cuentaId === c.id ? 'on' : ''}" data-act="mCuenta" data-v="${c.id}"><span class="ci" style="background:${c.color}">${svgI(c.ic || IC_CA[c.tipo], 14, 2.1)}</span>${esc(c.n)}</button>`).join('')}</div></div>` : ''}
@@ -1927,7 +1955,7 @@ const CAT_OPTS = () => S.cfg.categorias.map(c => ({ v: c.id, n: c.n }));
 const MON_OPTS = [{ v: 'RD', n: 'Pesos (RD$)' }, { v: 'US', n: 'Dólares (US$)' }];
 function formFijoV1(id) {
   const f = id ? S.cfg.fijos.find(x => x.id === id) : null;
-  openForm({ title: f ? 'Editar gasto fijo' : 'Nuevo gasto fijo', values: f || { cat: 'vivienda', mon: 'RD' },
+  openForm({ title: f ? 'Editar gasto fijo' : 'Nuevo gasto fijo', values: f || { cat: 'vivienda', mon: MB() },
     fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Alquiler' }, { k: 'm', label: 'Monto mensual normal', type: 'num' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'cat', label: 'Reglón', type: 'select', options: CAT_OPTS() }, { k: 'dia', label: 'Día de pago (para recordatorio y proyección)', type: 'num', ph: 'Ej. 30' }, { k: 'metodo', label: '¿Con qué lo pagas normalmente?', type: 'select', options: metOpts() }, { k: 'term', label: 'Terminal del préstamo (si es una cuota) · se conecta solo', ph: 'Ej. 7710' }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'otros' }],
     note: f ? 'Si solo cambió este mes, mejor toca el monto en la lista y elige "Solo este mes".' : 'Elige un ícono para reconocerlo rápido en tus listas.',
     onSave: o => { if (!o.n) return 'Ponle un nombre'; o.dia = Math.max(0, Math.min(31, Math.round(o.dia))); o.term = String(o.term || '').replace(/\D/g, '').slice(-4); if (!o.ic) o.ic = guessIcon(o.n, o.cat); if (f) Object.assign(f, o); else S.cfg.fijos.push({ id: uid(), ...o }); const nv = prAutoVincular(); saveCfg(); if (nv.length) setTimeout(() => prPreguntarPagoPrevio(nv[0]), 400); },
@@ -1935,7 +1963,7 @@ function formFijoV1(id) {
 }
 function formTC(id) {
   const c = id ? tarjeta(id) : null;
-  openForm({ title: c ? 'Editar tarjeta' : 'Nueva tarjeta', values: c || { mon: 'RD', color: COLORES_TC[S.cfg.tarjetas.length % COLORES_TC.length] },
+  openForm({ title: c ? 'Editar tarjeta' : 'Nueva tarjeta', values: c || { mon: MB(), color: COLORES_TC[S.cfg.tarjetas.length % COLORES_TC.length] },
     note: 'Ejemplo "28 / 23": el 28 es el día de corte y el 23 es el día límite de pago del mes siguiente. Si es una tarjeta de doble saldo (pesos y dólares), ponle el mismo terminal a las dos y salen juntas.',
     fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Gold RD' }, { k: 'term', label: 'Terminal (últimos 4 dígitos)', ph: 'Ej. 4821' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'limite', label: 'Límite de crédito', type: 'num' }, { k: 'corte', label: 'Día de corte (verde)', type: 'num' }, { k: 'pago', label: 'Día límite de pago del mes siguiente (rojo)', type: 'num' }, { k: 'cashback', label: 'Cashback o puntos (% que te devuelve, opcional)', type: 'num', ph: 'Ej. 2' }, ...(c ? [] : [{ k: 'base', label: 'Saldo adeudado hoy', type: 'num' }]), { k: 'color', label: 'Color', type: 'color' }],
     onSave: o => { if (!o.n) return 'Ponle un nombre'; o.term = String(o.term || '').replace(/\D/g, '').slice(-4); o.corte = Math.max(0, Math.min(31, Math.round(o.corte))); o.pago = Math.max(0, Math.min(31, Math.round(o.pago))); if (c) Object.assign(c, o); else S.cfg.tarjetas.push({ id: uid(), base: 0, ...o }); saveCfg(); },
@@ -1959,7 +1987,7 @@ function formMeta(id) {
   const r = resumen(S.mes);
   openForm({ title: g ? 'Editar meta' : 'Nueva meta', values: g || {},
     note: g && g.id === 'emergencia' ? `Lo usual es tener de 3 a 6 meses de gastos fijos. Para ti serían entre ${money(r.fijosPlan * 3)} y ${money(r.fijosPlan * 6)}.` : '',
-    fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Viaje, carro, inicial' }, { k: 'obj', label: 'Objetivo (RD$)', type: 'num' }, { k: 'inicial', label: 'Ya tengo ahorrado (RD$)', type: 'num' }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'meta' }],
+    fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Viaje, carro, inicial' }, { k: 'obj', label: 'Objetivo (' + SYM() + ')', type: 'num' }, { k: 'inicial', label: 'Ya tengo ahorrado (RD$)', type: 'num' }, { k: 'ic', label: 'Ícono', type: 'icon', def: 'meta' }],
     onSave: o => { if (!o.n) return 'Ponle un nombre'; if (g) Object.assign(g, o); else S.cfg.metas.push({ id: uid(), ...o }); saveCfg(); },
     onDelete: g && g.id !== 'emergencia' ? () => { S.cfg.metas = S.cfg.metas.filter(x => x.id !== id); saveCfg(); } : null });
 }
@@ -1988,7 +2016,7 @@ function formInc() {
 function formTopes() {
   const cs = S.cfg.categorias;
   openForm({ title: 'Topes mensuales', note: 'Límite para gastos variables por categoría (lo que registras aparte de los fijos). Deja 0 para no usar tope.', values: Object.fromEntries(cs.map(c => [c.id, c.tope || 0])),
-    fields: cs.map(c => ({ k: c.id, label: c.n + ' (RD$)', type: 'num' })),
+    fields: cs.map(c => ({ k: c.id, label: c.n + ' (' + SYM() + ')', type: 'num' })),
     onSave: o => { cs.forEach(c => c.tope = o[c.id] || 0); saveCfg(); } });
 }
 function ajustes() {
@@ -2001,6 +2029,7 @@ function ajustes() {
       <button class="btn" type="submit">Guardar ajustes</button>
     </form>
     ${perfilPanel()}
+    ${paisPanel()}
     ${cuentaPanel()}
     ${nubeConfigurada() ? notifPanel() : ''}
     <div class="panel stack"><h3>Exportar y recordatorios</h3><p class="small muted" style="margin:0">Lleva tus números a Excel o pon tus fechas de corte y pago en el Calendario del iPhone.</p>
@@ -2129,7 +2158,7 @@ function diagnostico(m) {
   for (const f of S.cfg.fijos) { const mv = fijoMov(m, f.id); const plan = fijoRD(m, f); if (mv && plan > 0 && toRD(mv.monto, mv.mon) > plan * 1.05) out.push({ k: 'warn', ic: icF(f), t: `${esc(f.n)} costó más de lo planeado`, d: `Planeaste ${money(plan)} y pagaste ${money(toRD(mv.monto, mv.mon))}.`, s: 'Si el aumento es permanente, actualiza el monto "de ahora en adelante".' }); }
   for (const c of S.cfg.categorias) if (c.tope > 0) { const g = variablePorCat(m, c.id); if (g > c.tope) out.push({ k: 'bad', ic: icC(c), t: `Te pasaste del tope de ${esc(c.n)}`, d: `Llevas ${money(g)} de ${money(c.tope)}.`, s: 'Frena esta categoría hasta el próximo mes.' }); }
   for (const c of S.cfg.tarjetas) { const sd = saldoTC(c); if (c.limite > 0 && sd / c.limite > .3) out.push({ k: sd / c.limite > .7 ? 'bad' : 'warn', ic: 'pago_tc', t: `${esc(c.n)} está al ${Math.round(sd / c.limite * 100)}% del límite`, d: 'Usar más del 30% del límite baja tu puntaje de crédito.', s: 'Paga el total al corte para no generar intereses.' }); }
-  const usd = fijos.filter(x => x.f.mon === 'US'); if (usd.length) out.push({ k: 'info', ic: 'coin', t: `Tienes ${usd.length} pagos en dólares (${money(sum(usd, x => x.v))} al mes)`, d: `Si el dólar sube RD$1, esos pagos te cuestan ${money(sum(usd, x => fijoMonto(m, x.f)))} más al mes.`, s: 'Revisa si usas todas esas suscripciones.' });
+  const usd = fijos.filter(x => x.f.mon === 'US'); if (usd.length && MB() === 'RD') out.push({ k: 'info', ic: 'coin', t: `Tienes ${usd.length} pagos en dólares (${money(sum(usd, x => x.v))} al mes)`, d: `Si el dólar sube RD$1, esos pagos te cuestan ${money(sum(usd, x => fijoMonto(m, x.f)))} más al mes.`, s: 'Revisa si usas todas esas suscripciones.' });
   if (!out.some(x => x.k === 'bad' || x.k === 'warn')) out.unshift({ k: 'good', ic: 'check', t: 'Vas bien', d: 'Tus gastos están dentro de lo recomendado y llegas a tu meta de ahorro.', s: 'Si te sobra, sube tu meta un par de puntos.' });
   const ord = { bad: 0, warn: 1, info: 2, good: 3 };
   return out.sort((a, c) => ord[a.k] - ord[c.k]);
@@ -2337,7 +2366,7 @@ function drawOB() {
     btn = 'Empezar';
   } else if (s === 1) {
     body = `<div class="eyebrow">Paso 1 de 4 · Tu sueldo</div><h2>¿Cuánto recibes al mes?${infoB('sueldo')}</h2><p>Lo que te llega a la cuenta, ya con descuentos. Si cobras por quincena, suma las dos.</p>
-      <div class="panel"><div class="amount"><span>RD$</span><input id="ob_sueldo" data-ob="1" inputmode="decimal" placeholder="0" value="${esc(OB.sueldo)}" aria-label="Sueldo mensual"></div></div>
+      <div class="panel"><div class="amount"><span>${SYM()}</span><input id="ob_sueldo" data-ob="1" inputmode="decimal" placeholder="0" value="${esc(OB.sueldo)}" aria-label="Sueldo mensual"></div></div>
       <div><div class="eyebrow" style="margin-bottom:7px">¿Cada cuánto cobras?</div><div class="seg">${[['mensual', 'Mensual'], ['quincenal', 'Quincenal'], ['semanal', 'Semanal'], ['variable', 'Variable']].map(([k, n]) => `<button class="${OB.frec === k ? 'on' : ''}" data-act="obFrec" data-v="${k}">${n}</button>`).join('')}</div></div>
       <button class="link" data-act="obCalc" style="justify-self:start">${OB.showCalc ? 'Ocultar calculadora' : '¿Solo sabes tu sueldo bruto? Calcúlalo aquí'}</button>
       ${OB.showCalc ? `<div class="panel stack"><label class="f">Sueldo bruto mensual<input class="in" id="ob_bruto" data-ob="1" inputmode="decimal" value="${esc(OB.bruto)}"></label><p class="tiny muted" style="margin:0">Uso estos descuentos (puedes cambiarlos en Plan → Nómina): ISR ${fmtN(cfg.nomina.isr, 2)}%, AFP ${fmtN(cfg.nomina.afp, 2)}%, SFS ${fmtN(cfg.nomina.sfs, 2)}% y póliza ${money(cfg.nomina.poliza)}.</p><div id="ob_live">${obLiveHTML()}</div><button class="btn ghost" data-act="obUsarNeto">Usar este neto como mi sueldo</button></div>` : '<div id="ob_live"></div>'}`;
@@ -2676,7 +2705,7 @@ function guardarNavidad() {
 }
 function navidadCard() {
   const mm = +S.mes.slice(5), y = +S.mes.slice(0, 4);
-  if (mm < 10) return '';
+  if (mm < 10 || !enRD()) return '';   // la regalía (Salario de Navidad) es de la ley dominicana
   const r = calcNavidad(y), x = (S.cfg.extras || []).find(e => e.id === 'regalia-' + y), rec = x && recibidoDe(x);
   return `<button class="xmas" data-act="${x && !rec && mm === 12 ? 'recibir' : 'navidad'}" data-id="${x ? x.id : ''}" data-v="${y}"><span class="tree">${svgI('tree', 46, 1.6)}</span>
     <div class="eyebrow">Bono navideño ${y}</div>
@@ -2733,7 +2762,7 @@ function ahorrosSeccion() {
   return `<section class="save-hero wide">
       <span class="hero-pig">${svgI('ahorro', 96, 1.3)}</span>
       <div class="eyebrow">Tienes ahorrado hoy</div>
-      <div class="big"><small>RD$</small><span data-count="${Math.round(total)}">${fmtN(total, 0)}</span></div>
+      <div class="big"><small>${SYM()}</small><span data-count="${Math.round(total)}">${fmtN(total, 0)}</span></div>
       <div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap"><span class="hpill ${dif >= 0 ? 'up' : 'down'}">${dif >= 0 ? '▲' : '▼'} ${money(Math.abs(dif))} este mes</span><span class="small" style="color:var(--note-muted)">en ${cs.length} lugar${cs.length > 1 ? 'es' : ''}</span></div>
       <div class="spark">${sparkAhorro(vals, ms.map(m => MES3[+m.slice(5) - 1]))}</div>
       <div class="hero-btns"><button class="btn" data-act="ahDep">+ Depositar</button><button class="btn ghost-l" data-act="ahElegir" data-v="saldo">Actualizar saldo</button><button class="btn ghost-l" data-act="ahElegir" data-v="retiro">Retirar</button></div>
@@ -2763,7 +2792,7 @@ function formCuenta(id) {
   openForm({ title: c ? 'Editar lugar de ahorro' : 'Nuevo lugar de ahorro', values: c ? { n: c.n, tipo: c.tipo, ic: c.ic, color: c.color } : { tipo: 'cuenta', ic: 'bank', color: COL_CA[cuentasA().length % COL_CA.length], fecha: hoyISO() },
     note: c ? '' : 'Por ejemplo: "Cuenta de ahorros Popular", "Cooperativa", "Certificado BHD" o "Efectivo en casa".',
     fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Cuenta de ahorros Popular' }, { k: 'tipo', label: 'Tipo', type: 'select', options: Object.entries(TIPOS_CA).map(([v, n]) => ({ v, n })) },
-      ...(c ? [] : [{ k: 'saldo', label: '¿Cuánto tienes ahí hoy? (RD$)', type: 'num' }, { k: 'fecha', label: 'Fecha', type: 'date' }]),
+      ...(c ? [] : [{ k: 'saldo', label: '¿Cuánto tienes ahí hoy? (' + SYM() + ')', type: 'num' }, { k: 'fecha', label: 'Fecha', type: 'date' }]),
       { k: 'ic', label: 'Ícono', type: 'icon' }, { k: 'color', label: 'Color', type: 'color', palette: COL_CA }],
     onSave: o => {
       if (!o.n) return 'Ponle un nombre';
@@ -2778,7 +2807,7 @@ function formRegistro(cid, tipo, rid) {
   tipo = r ? r.tipo : tipo;
   openForm({ title: tipo === 'saldo' ? 'Actualizar saldo · ' + c.n : 'Retiro · ' + c.n, values: r ? { monto: r.monto, fecha: r.fecha, nota: r.nota } : { monto: tipo === 'saldo' ? saldoCuenta(c, hoyISO()) : '', fecha: hoyISO() },
     note: tipo === 'saldo' ? 'Escribe lo que dice tu cuenta hoy. Desde esta fecha, el saldo parte de este número.' : 'Dinero que sacaste de tus ahorros.',
-    fields: [{ k: 'monto', label: tipo === 'saldo' ? 'Saldo actual (RD$)' : 'Monto retirado (RD$)', type: 'num' }, { k: 'fecha', label: 'Fecha', type: 'date' }, { k: 'nota', label: 'Nota (opcional)', ph: tipo === 'saldo' ? 'Ej. Según la app del banco' : 'Ej. Emergencia del carro' }],
+    fields: [{ k: 'monto', label: tipo === 'saldo' ? 'Saldo actual (' + SYM() + ')' : 'Monto retirado (' + SYM() + ')', type: 'num' }, { k: 'fecha', label: 'Fecha', type: 'date' }, { k: 'nota', label: 'Nota (opcional)', ph: tipo === 'saldo' ? 'Ej. Según la app del banco' : 'Ej. Emergencia del carro' }],
     onSave: o => {
       if (tipo === 'retiro' && !(o.monto > 0)) return 'Escribe el monto';
       if (r) Object.assign(r, { monto: o.monto, fecha: o.fecha || r.fecha, nota: o.nota });
@@ -2907,16 +2936,16 @@ function libroExcel() {
     };
     return [
       { name: 'Resumen ' + y, cols: [{ h: 'Mes', w: 16 }, { h: 'Ingresos', t: 'm' }, { h: 'Fijos planeados', t: 'm', w: 16 }, { h: 'Fijos pagados', t: 'm', w: 15 }, { h: 'Gastos variables', t: 'm', w: 16 }, { h: 'Ahorrado', t: 'm' }, { h: 'Libre', t: 'm' }], rows: resRows },
-      { name: 'Movimientos', cols: [{ h: 'Fecha', w: 12 }, { h: 'Tipo', w: 15 }, { h: 'Categoría', w: 18 }, { h: 'Método', w: 16 }, { h: 'Tarjeta pagada', w: 15 }, { h: 'Detalle', w: 26 }, { h: 'Nota', w: 26 }, { h: 'Moneda', w: 8 }, { h: 'Monto', t: 'm' }, { h: 'Monto en RD$', t: 'm', w: 15 }],
+      { name: 'Movimientos', cols: [{ h: 'Fecha', w: 12 }, { h: 'Tipo', w: 15 }, { h: 'Categoría', w: 18 }, { h: 'Método', w: 16 }, { h: 'Tarjeta pagada', w: 15 }, { h: 'Detalle', w: 26 }, { h: 'Nota', w: 26 }, { h: 'Moneda', w: 8 }, { h: 'Monto', t: 'm' }, { h: 'Monto en ' + SYM(), t: 'm', w: 15 }],
         rows: movs.map(t => [t.fecha, TIPO[t.tipo] || t.tipo, t.tipo === 'gasto' ? cat(t.cat).n : '', metodo(t.metodo).n, t.tipo === 'pago_tc' ? (tarjeta(t.destino) || {}).n || '' : '', detalle(t), t.nota || '', monTxt(t.mon), t.monto, toRD(t.monto, t.mon)]) },
-      { name: 'Gastos fijos', cols: [{ h: 'Reglón', w: 18 }, { h: 'Nombre', w: 28 }, { h: 'Moneda', w: 8 }, { h: 'Monto mensual', t: 'm', w: 15 }, { h: 'Monto en RD$', t: 'm', w: 15 }, { h: 'Día de pago', w: 11 }, { h: 'Lo pagas con', w: 18 }],
+      { name: 'Gastos fijos', cols: [{ h: 'Reglón', w: 18 }, { h: 'Nombre', w: 28 }, { h: 'Moneda', w: 8 }, { h: 'Monto mensual', t: 'm', w: 15 }, { h: 'Monto en ' + SYM(), t: 'm', w: 15 }, { h: 'Día de pago', w: 11 }, { h: 'Lo pagas con', w: 18 }],
         rows: cfg.fijos.map(f => [cat(f.cat).n, f.n, monTxt(f.mon), num(f.m), toRD(num(f.m), f.mon), f.dia || '', metValido(f.metodo) ? metodo(f.metodo).n : '']) },
       { name: 'Tarjetas', cols: [{ h: 'Tarjeta', w: 16 }, { h: 'Terminal', w: 9 }, { h: 'Moneda', w: 8 }, { h: 'Límite', t: 'm' }, { h: 'Saldo', t: 'm' }, { h: 'Disponible', t: 'm' }, { h: 'Día de corte', w: 11 }, { h: 'Día límite de pago', w: 16 }, { h: 'Uso del límite', t: 'p', w: 13 }, { h: 'Cashback', t: 'p', w: 10 }],
         rows: cfg.tarjetas.map(c => { const s = saldoTC(c); return [c.n, c.term || '', monTxt(c.mon), num(c.limite), s, Math.max(0, num(c.limite) - s), c.corte || '', c.pago || '', c.limite ? s / c.limite : '', c.cashback ? c.cashback / 100 : '']; }) },
       { name: 'Préstamos', cols: [{ h: 'Préstamo', w: 18 }, { h: 'Tipo', w: 10 }, { h: 'Terminal', w: 10 }, { h: 'Estado', w: 14 }, { h: 'Tasa anual %', w: 12 }, { h: 'Monto total', t: 'm' }, { h: 'Abonado', t: 'm' }, { h: 'Balance (como el banco)', t: 'm' }, { h: 'Interés acumulado', t: 'm' }, { h: 'Para saldarlo hoy', t: 'm' }, { h: 'Interés de hoy', t: 'm' }],
         rows: cfg.prestamos.map(p => { const i = prestInfo(p); return [p.n, tipoPrest(p) === 'banco' ? 'Banco' : 'Persona', p.term || '', p.estado || '', num(p.tasa) || '', num(p.m), i.pagado, Math.max(0, i.capital), i.interes, Math.max(0, i.saldo), i.diario]; }) },
       { name: 'Me deben', cols: [{ h: 'Persona', w: 18 }, { h: 'Moneda', w: 8 }, { h: 'Me prestó / le presté', t: 'm' }, { h: 'Ya me dio', t: 'm' }, { h: 'Me debe', t: 'm' }, { h: 'Fecha de pago', w: 14 }, { h: 'Nota', w: 28 }],
-        rows: (cfg.porCobrar || []).map(c => [c.n, c.mon || 'RD', num(c.m), sum(c.abonos || [], a => num(a.monto)), pendCobrar(c), c.fecha || '', c.nota || '']) },
+        rows: (cfg.porCobrar || []).map(c => [c.n, c.mon || MB(), num(c.m), sum(c.abonos || [], a => num(a.monto)), pendCobrar(c), c.fecha || '', c.nota || '']) },
       { name: 'Ingresos extra', cols: [{ h: 'Mes', w: 10 }, { h: 'Tipo', w: 20 }, { h: 'Descripción', w: 28 }, { h: 'Monto', t: 'm' }, { h: 'Seguro o posible', w: 15 }, { h: 'Recibido', w: 10 }],
         rows: (cfg.extras || []).slice().sort((a, b) => a.mes.localeCompare(b.mes)).map(x => [x.mes, (TIPOS_EX[x.tipo] || TIPOS_EX.otro).n, x.n, num(x.monto), x.seguro ? 'Seguro' : 'Posible', recibidoDe(x) ? 'Sí' : 'No']) },
       { name: 'Ahorros', cols: [{ h: 'Lugar', w: 26 }, { h: 'Tipo', w: 22 }, { h: 'Saldo hoy', t: 'm', w: 15 }], rows: cuentasA().map(c => [c.n, TIPOS_CA[c.tipo] || '', saldoCuenta(c, hoyISO())]) },
@@ -2953,7 +2982,7 @@ function agendaItems(dias = 15) {
       if (!f.dia || tarjeta(f.metodo) || (esPartes(f) ? fijoCompleto(m, f) || f.freq === 'semana' : esPeriodico(f) ? !tocaEnMes(m, f) || (mm.movs || []).some(t => t.fijoId === f.id) : (mm.movs || []).some(t => t.fijoId === f.id))) continue;
       const monto = mm.fx?.[f.id] ?? f.m; if (!(num(monto) > 0)) continue;
       const d = fechaDia(base.getFullYear(), base.getMonth(), f.dia);
-      if (dentro(d)) add({ fecha: d, k: 'fijo', t: f.n, s: 'Gasto fijo' + (metValido(f.metodo) ? ' · con ' + metodo(f.metodo).n : '') + (f.mon === 'US' ? ' · ' + money(num(monto), 'US') : ''), monto: toRD(num(monto), f.mon), c: cat(f.cat).c, ic: icF(f), act: k === 0 && S.mes === mesActual() ? 'pagarFijo' : '', id: f.id });
+      if (dentro(d)) add({ fecha: d, k: 'fijo', t: f.n, s: 'Gasto fijo' + (metValido(f.metodo) ? ' · con ' + metodo(f.metodo).n : '') + (f.mon && f.mon !== MB() ? ' · ' + money(num(monto), f.mon) : ''), monto: toRD(num(monto), f.mon), c: cat(f.cat).c, ic: icF(f), act: k === 0 && S.mes === mesActual() ? 'pagarFijo' : '', id: f.id });
     }
     for (const i of cobros()) { const d = fechaDia(base.getFullYear(), base.getMonth(), i.dia); if (dentro(d)) add({ fecha: d, k: 'cobro', t: 'Cobro: ' + i.n, monto: mm.ing?.[i.id] ?? i.m, c: '#0B7A55', ic: i.ic || 'ingreso', ingreso: true, id: i.id }); }
   }
@@ -3227,7 +3256,10 @@ function drawAuth() {
       ${crear ? `<label class="f">Repite la contraseña<input class="in" type="password" id="au_pass2" autocomplete="new-password"></label>
       <div class="f"><span>¿Cómo te identificas?</span><div class="pf-sx" role="radiogroup" aria-label="Sexo"><button type="button" role="radio" aria-checked="${a.sexo === 'h'}" class="${a.sexo === 'h' ? 'on' : ''}" data-act="auSexo" data-v="h"><span aria-hidden="true">👨</span>Hombre</button><button type="button" role="radio" aria-checked="${a.sexo === 'm'}" class="${a.sexo === 'm' ? 'on' : ''}" data-act="auSexo" data-v="m"><span aria-hidden="true">👩</span>Mujer</button></div></div>
       <label class="f">Fecha de nacimiento<input class="in" type="date" id="au_nac" min="1900-01-01" max="${hoyISO()}" value="${esc(a.nac || '')}"></label>
-      <p class="tiny muted" style="margin:-4px 0 0">Con esto Hannah te habla como se debe y te felicita en tu cumpleaños 🎂. Se guarda una sola vez y no se puede cambiar.</p>` : ''}
+      <p class="tiny muted" style="margin:-4px 0 0">Con esto Hannah te habla como se debe y te felicita en tu cumpleaños 🎂. Se guarda una sola vez y no se puede cambiar.</p>
+      <div class="f"><span>País donde vives</span>${paisPicker('pkAuth', a.pais || paisSugerido())}</div>
+      <div class="f"><span>Tu moneda principal</span>${monedaSeg('au', a.moneda || monedaDePais(a.pais || paisSugerido()))}</div>
+      <p class="tiny muted" style="margin:-4px 0 0">En esta moneda verás tus totales. El país y la moneda los cambias cuando quieras en Ajustes.</p>` : ''}
       <div id="au_msg">${auMsgs()}</div>
       <button class="btn" type="submit">${crear ? 'Crear mi cuenta' : 'Entrar'}</button>
       ${crear ? (NUBE.codigo ? '<p class="tiny muted" style="margin:0">Te llega un código a tu correo para confirmar que es tuyo.</p>' : '') : NUBE.codigo ? `<div class="auth-links"><button type="button" class="link" data-act="auCodigo">Entrar con un código</button><button type="button" class="link" data-act="auOlvide">¿Olvidaste tu contraseña?</button></div>` : `<div class="auth-links"><button type="button" class="link" data-act="auReset">¿Olvidaste tu contraseña?</button></div>`}
@@ -3316,8 +3348,11 @@ async function auEnviar() {
       if (a.sexo !== 'h' && a.sexo !== 'm') return auErr('Elige si eres hombre o mujer.');
       if (!a.nac) return auErr('Escribe tu fecha de nacimiento.');
       if (!nacValida(a.nac)) return auErr('Esa fecha de nacimiento no es válida. Revisa el día, el mes y el año.');
-      auBusy(true); PF_ALTA = { email: a.email, sexo: a.sexo, nac: a.nac };
-      const { data, error } = await SB.auth.signUp({ email: a.email, password: p1, options: { emailRedirectTo: urlApp(), data: { sexo: a.sexo, nac: a.nac } } });
+      a.pais = paisElegido(g('pkAuth')); a.moneda = monedaLeida(g('auForm'));
+      if (!/^[A-Z]{2}$/.test(a.pais || '')) return auErr('Elige el país donde vives.');
+      if (a.moneda !== 'RD' && a.moneda !== 'US') return auErr('Elige tu moneda principal.');
+      auBusy(true); PF_ALTA = { email: a.email, sexo: a.sexo, nac: a.nac, pais: a.pais, moneda: a.moneda };
+      const { data, error } = await SB.auth.signUp({ email: a.email, password: p1, options: { emailRedirectTo: urlApp(), data: { sexo: a.sexo, nac: a.nac, pais: a.pais, moneda: a.moneda } } });
       if (error) throw error;
       if (data.session) { toast('¡Cuenta creada!'); return entrar(data.user); }
       if (data.user && Array.isArray(data.user.identities) && !data.user.identities.length) return auErr('Ese correo ya tiene una cuenta. Entra con tu contraseña.');
@@ -3581,6 +3616,10 @@ const H_KB = {
       claves: ['consejo diario', 'notificacion diaria', 'notificaciones de hannah', 'hora del consejo', 'cambiar la hora', 'mover la hora', 'a que hora llega', 'no me llega el consejo', 'activar notificaciones', 'apagar notificaciones', 'notificaciones'],
       resp: 'Cada día te mando un consejo corto al celular.\n\n• Se activa en **Ajustes → Consejo diario de Hannah** (en iPhone, con la app instalada en la pantalla de inicio).\n• Llega a las **10:00 a. m.**, pero tú eliges la hora en **“¿A qué hora te aviso?”**.\n• O dímelo a mí: “cambia la hora de mi consejo a las 7 de la mañana”.\n\nSi la hora que eliges ya pasó hoy, empieza mañana.',
       ir: { act: 'ajustes' }, irTxt: 'Ir a Ajustes' },
+    { id: 'pais_moneda', titulo: 'Tu país y tu moneda principal', grupo: 'cuenta',
+      claves: ['moneda', 'mi moneda', 'moneda principal', 'cambiar moneda', 'cambiar a dolares', 'cambiar a pesos', 'usar dolares', 'mi pais', 'cambiar pais', 'bandera', 'vivo en', 'pesos o dolares', 'dolares o pesos'],
+      resp: 'Tu **moneda principal** es en la que ves tus totales, tu presupuesto y tus metas: **RD$** o **US$**.\n\n• Puedes anotar cualquier gasto en RD$ o US$: lo convierto con tu **tasa del dólar** (Ajustes).\n• Para cambiar el país o la moneda ve a **Ajustes → País y moneda**, cuantas veces quieras.\n• Si ya tienes montos, te pregunto si los **convierto** con tu tasa o si **ya estaban** en esa moneda.\n\nAntes de convertir guardo un respaldo en tu teléfono, por si acaso.',
+      ir: { act: 'ajustes' }, irTxt: 'Ir a Ajustes', sig: ['perfil'] },
     { id: 'perfil', titulo: 'Tu perfil y tu cumpleaños', grupo: 'cuenta',
       claves: ['mi perfil', 'cumpleanos', 'mi cumpleanos', 'fecha de nacimiento', 'cambiar mi fecha', 'cambiar fecha de nacimiento', 'hombre o mujer', 'cambiar mi sexo', 'por que me pide', 'por que me pidio', 'editar perfil', 'sexo'],
       resp: 'Cuando creas tu cuenta te pido dos cosas: si eres hombre o mujer y tu fecha de nacimiento.\n\n• Con eso te hablo como se debe en cada mensaje.\n• El día de tu cumpleaños te felicito con una sorpresa. 🎂\n\nSe guarda **una sola vez** y no se puede cambiar. Lo puedes ver en **Ajustes → Tu perfil**. Pregúntame “¿cuándo es mi cumpleaños?” y te digo cuántos días faltan.',
@@ -3591,7 +3630,7 @@ const H_KB = {
       ir: { tab: 'inicio' }, irTxt: 'Ver mis gastos fijos', sig: ['pago_partes'] },
     { id: 'pago_partes', titulo: 'Gastos que pagas por partes (cada semana)', grupo: 'plan',
       claves: ['por partes', 'cada semana', 'semanal', 'cada sabado', 'peluqueria', 'barberia', 'quincenal', 'cada quincena', 'varias veces al mes', 'pago semanal'],
-      resp: 'Toca el gasto fijo y en **“¿Cómo lo pagas?”** elige **Cada semana**, **Cada quincena** o **Varias veces**.\n\nPon cuánto pagas cada vez (ej. RD$450) y el día. Yo calculo si el mes trae 4 o 5 semanas, y cada vez que pagues tocas el cuadrito: 1 de 4, 2 de 4… Cuando completes, queda en verde.',
+      resp: 'Toca el gasto fijo y en **“¿Cómo lo pagas?”** elige **Cada semana**, **Cada quincena** o **Varias veces**.\n\nPon cuánto pagas cada vez (ej. {$}450) y el día. Yo calculo si el mes trae 4 o 5 semanas, y cada vez que pagues tocas el cuadrito: 1 de 4, 2 de 4… Cuando completes, queda en verde.',
       ir: { tab: 'inicio' }, irTxt: 'Ver mis gastos fijos', sig: ['pago_periodico'] },
     { id: 'prestamo_interes', titulo: 'Préstamos con tasa de interés', grupo: 'tarjetas',
       claves: ['tasa de interes', 'prestamo con interes', 'interes diario', 'interes del prestamo', 'cuanto debo exacto', 'interes de hoy', 'capital pendiente', 'poner la tasa', 'saldo exacto', 'balance a la fecha', 'balance del banco', 'ultimo pago de cuota', 'no coincide con el banco', 'no cuadra con el banco', 'interes acumulado', 'el banco no cambia', 'saldar el prestamo'],
@@ -3833,7 +3872,7 @@ const H_KB = {
       titulo: 'Tarjetas de doble saldo',
       grupo: 'tarjetas',
       claves: ['doble saldo', 'terminal', 'tarjeta en pesos y dolares', 'misma tarjeta dos monedas', 'ultimos 4 digitos', 'rd y us'],
-      resp: 'Si tu tarjeta tiene un saldo en pesos y otro en dólares, créala dos veces: una con **Moneda** Pesos y otra con Dólares.\n\nPonle el **mismo Terminal** (últimos 4 dígitos) a las dos. La app las muestra juntas como **Doble saldo**, lado a lado, con el **Total en RD$**.\n\nCuando registres un gasto, elige la de la moneda en que compraste.',
+      resp: 'Si tu tarjeta tiene un saldo en pesos y otro en dólares, créala dos veces: una con **Moneda** Pesos y otra con Dólares.\n\nPonle el **mismo Terminal** (últimos 4 dígitos) a las dos. La app las muestra juntas como **Doble saldo**, lado a lado, con el **Total en {$}**.\n\nCuando registres un gasto, elige la de la moneda en que compraste.',
       ir: { tab: 'tarjetas' },
       irTxt: 'Ver mis tarjetas',
       sig: ['dolares', 'agregar_tarjeta']
@@ -3843,7 +3882,7 @@ const H_KB = {
       titulo: 'Uso del límite (30%)',
       grupo: 'tarjetas',
       claves: ['utilizacion', 'uso del limite', 'treinta por ciento', '30%', 'puntaje de credito', 'disponible', 'credito usado'],
-      resp: 'La **utilización** es qué parte de tu límite estás usando. Si tu límite es RD$10,000 y debes RD$3,000, vas al 30%.\n\nUna guía muy usada es no pasar del 30%, porque usar mucho del límite suele afectar tu historial de crédito. La app te avisa en **Proyección** cuando pasas del 30%, y en **Pendientes** si pasas del 70%.\n\nLo verás en cada tarjeta con la barrita y el **Disponible**.',
+      resp: 'La **utilización** es qué parte de tu límite estás usando. Si tu límite es {$}10,000 y debes {$}3,000, vas al 30%.\n\nUna guía muy usada es no pasar del 30%, porque usar mucho del límite suele afectar tu historial de crédito. La app te avisa en **Proyección** cuando pasas del 30%, y en **Pendientes** si pasas del 70%.\n\nLo verás en cada tarjeta con la barrita y el **Disponible**.',
       ir: { tab: 'tarjetas' },
       irTxt: 'Ver mis tarjetas',
       sig: ['pago_tarjeta', 'alertas_proyeccion', 'corte_pago']
@@ -4079,7 +4118,7 @@ const H_KB = {
       titulo: 'Metas de ahorro',
       grupo: 'ahorro',
       claves: ['metas', 'nueva meta', 'crear meta', 'apartar dinero', 'ahorrar para un viaje', 'objetivo de ahorro', 'inicial del carro'],
-      resp: 'En **Mis ahorros**, baja a **Metas** y toca **Nueva meta**. Pon el nombre, el **Objetivo (RD$)** y lo que **Ya tengo ahorrado**.\n\nCada vez que apartes dinero, toca la meta y luego **Apartar dinero**. La app te sugiere un monto según tu regla de ahorro.\n\nVerás tu barra de progreso y, si tienes regla, cuántos meses te faltan aproximadamente a ese ritmo.',
+      resp: 'En **Mis ahorros**, baja a **Metas** y toca **Nueva meta**. Pon el nombre, el **Objetivo ({$})** y lo que **Ya tengo ahorrado**.\n\nCada vez que apartes dinero, toca la meta y luego **Apartar dinero**. La app te sugiere un monto según tu regla de ahorro.\n\nVerás tu barra de progreso y, si tienes regla, cuántos meses te faltan aproximadamente a ese ritmo.',
       ir: { act: 'formMeta' },
       irTxt: 'Crear una meta',
       sig: ['fondo_emergencia', 'regla_ahorro', 'ahorro_movimiento']
@@ -4325,7 +4364,7 @@ const H_FIN = [
     id: 'ahorrar_ganando_poco',
     titulo: 'Cómo ahorrar ganando poco',
     claves: ['como ahorro si gano poco', 'ahorrar ganando poco', 'gano poco', 'sueldo minimo ahorrar', 'ahorrar con poco dinero', 'se puede ahorrar con poco', 'ahorrar chelitos', 'ahorrar poquito', 'ahorrar mas', 'poco ingreso', 'ahorrar siendo pobre'],
-    resp: 'Sí se puede, y el monto importa menos que **el hábito**.\n• Empieza con algo que no duela: RD$200 o RD$500 por quincena.\n• Sepáralo el mismo día que cobras, antes de gastar.\n• Guárdalo en una cuenta aparte, no en la cartera.\n• Cada vez que te suban el sueldo, sube también el ahorro.\nLo pequeño y constante le gana a lo grande y esporádico.',
+    resp: 'Sí se puede, y el monto importa menos que **el hábito**.\n• Empieza con algo que no duela: {$}200 o {$}500 por quincena.\n• Sepáralo el mismo día que cobras, antes de gastar.\n• Guárdalo en una cuenta aparte, no en la cartera.\n• Cada vez que te suban el sueldo, sube también el ahorro.\nLo pequeño y constante le gana a lo grande y esporádico.',
     sig: ['pagate_primero', 'ahorro_automatico', 'gastos_hormiga']
   },
   {
@@ -4416,7 +4455,7 @@ const H_FIN = [
     id: 'tasa_anual_diaria',
     titulo: 'Tasa anual vs. interés diario',
     claves: ['tasa anual', 'interes diario', 'como se calcula el interes', 'tasa diaria', 'interes de un prestamo', 'cuanto me cobran de interes', 'calcular interes', 'saldo por tasa', 'interes por dia', 'tasa de interes'],
-    resp: 'Muchos préstamos te dan una **tasa anual**, pero el interés se calcula sobre tu **saldo pendiente**, a menudo por día:\n**Interés diario ≈ saldo × tasa anual ÷ 365**\nEjemplo ilustrativo: RD$100,000 al 18% anual → 100,000 × 0.18 ÷ 365 ≈ **RD$49 por día**.\nPor eso, cuanto antes bajes el saldo, menos interés pagas. Confirma con tu banco el método exacto de tu préstamo.',
+    resp: 'Muchos préstamos te dan una **tasa anual**, pero el interés se calcula sobre tu **saldo pendiente**, a menudo por día:\n**Interés diario ≈ saldo × tasa anual ÷ 365**\nEjemplo ilustrativo: {$}100,000 al 18% anual → 100,000 × 0.18 ÷ 365 ≈ **{$}49 por día**.\nPor eso, cuanto antes bajes el saldo, menos interés pagas. Confirma con tu banco el método exacto de tu préstamo.',
     sig: ['abono_capital', 'tasa_efectiva']
   },
   {
@@ -4465,21 +4504,21 @@ const H_FIN = [
     id: 'cobrar_deuda',
     titulo: 'Cobrarle a alguien que te debe',
     claves: ['cobrar a alguien', 'como cobrar', 'me deben dinero', 'no me paga', 'cobrarle a un amigo', 'recordar una deuda', 'mensaje para cobrar', 'cobrar con respeto', 'me deben cuartos', 'se hace el loco'],
-    resp: 'Cobrar lo tuyo no es de mala gente.\n• Escribe en privado, con tono tranquilo: "Oye, ¿cómo vamos con lo de los RD$5,000?".\n• Propón opciones: "¿Te sirve en dos pagos?".\n• Acuerden una fecha concreta y confírmala por escrito.\n• Evita reclamar en público o frente a otros.\nSi no responde nunca, decide cuánto vale la relación vs. el monto, y aprende para la próxima.',
+    resp: 'Cobrar lo tuyo no es de mala gente.\n• Escribe en privado, con tono tranquilo: "Oye, ¿cómo vamos con lo de los {$}5,000?".\n• Propón opciones: "¿Te sirve en dos pagos?".\n• Acuerden una fecha concreta y confírmala por escrito.\n• Evita reclamar en público o frente a otros.\nSi no responde nunca, decide cuánto vale la relación vs. el monto, y aprende para la próxima.',
     sig: ['prestar_amigo']
   },
   {
     id: 'interes_compuesto',
     titulo: 'Interés compuesto',
     claves: ['interes compuesto', 'que es el interes compuesto', 'interes sobre interes', 'hacer crecer el dinero', 'reinvertir intereses', 'el poder del tiempo', 'empezar a ahorrar joven', 'multiplicar el dinero', 'capitalizacion'],
-    resp: 'El **interés compuesto** es ganar intereses sobre tus intereses: lo que ganas se suma al capital y la próxima vez gana también.\nEjemplo ilustrativo: RD$10,000 al 10% anual → año 1: RD$11,000; año 2: RD$12,100, sin poner nada más.\nSus ingredientes: **tiempo**, constancia y no retirar.\nOjo: funciona igual con las deudas, pero en tu contra.',
+    resp: 'El **interés compuesto** es ganar intereses sobre tus intereses: lo que ganas se suma al capital y la próxima vez gana también.\nEjemplo ilustrativo: {$}10,000 al 10% anual → año 1: {$}11,000; año 2: {$}12,100, sin poner nada más.\nSus ingredientes: **tiempo**, constancia y no retirar.\nOjo: funciona igual con las deudas, pero en tu contra.',
     sig: ['que_es_invertir', 'inflacion', 'invertir_poco']
   },
   {
     id: 'inflacion',
     titulo: 'Qué es la inflación',
     claves: ['que es inflacion', 'inflacion', 'todo esta caro', 'subieron los precios', 'el dinero vale menos', 'poder adquisitivo', 'por que todo sube', 'el peso rinde menos', 'costo de la vida'],
-    resp: 'La **inflación** es el aumento general de precios con el tiempo. Con los mismos RD$1,000 compras menos que hace unos años.\nQué significa para ti:\n• El dinero guardado sin rendimiento pierde poder de compra.\n• Tu fondo de emergencia sí debe estar disponible, aunque rinda poco.\n• Para metas largas, conviene buscar opciones que rindan algo y que entiendas.\n• Revisa tu presupuesto al menos una vez al año.',
+    resp: 'La **inflación** es el aumento general de precios con el tiempo. Con los mismos {$}1,000 compras menos que hace unos años.\nQué significa para ti:\n• El dinero guardado sin rendimiento pierde poder de compra.\n• Tu fondo de emergencia sí debe estar disponible, aunque rinda poco.\n• Para metas largas, conviene buscar opciones que rindan algo y que entiendas.\n• Revisa tu presupuesto al menos una vez al año.',
     sig: ['interes_compuesto', 'que_es_invertir', 'pesos_dolares']
   },
   {
@@ -4577,7 +4616,7 @@ const H_FIN = [
     id: 'metas_smart',
     titulo: 'Metas SMART',
     claves: ['metas smart', 'metas de ahorro', 'como poner una meta', 'objetivos financieros', 'meta especifica', 'ahorrar para un viaje', 'ahorrar para algo', 'plan de ahorro', 'cuanto ahorrar por mes para una meta', 'meta con fecha'],
-    resp: 'Una meta **SMART** es: **E**specífica, **M**edible, **A**lcanzable, **R**elevante y con **T**iempo.\n❌ "Quiero ahorrar".\n✅ "Ahorrar RD$60,000 para el inicial del carro en 12 meses".\nDivide: 60,000 ÷ 12 = RD$5,000 al mes, o RD$2,500 por quincena.\nPonle nombre a la cuenta y revisa el avance cada mes.',
+    resp: 'Una meta **SMART** es: **E**specífica, **M**edible, **A**lcanzable, **R**elevante y con **T**iempo.\n❌ "Quiero ahorrar".\n✅ "Ahorrar {$}60,000 para el inicial del carro en 12 meses".\nDivide: 60,000 ÷ 12 = {$}5,000 al mes, o {$}2,500 por quincena.\nPonle nombre a la cuenta y revisa el avance cada mes.',
     sig: ['presupuesto_basico', 'ahorro_automatico']
   },
   {
@@ -4800,7 +4839,7 @@ const H_FRASES = [
 const APP_VER = '1.7.2';
 const APP_FECHA = 'Noviembre 2026';
 const NOVEDADES = [
-  { v: '1.7.2', f: 'Noviembre 2026', items: ['Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”', 'Intereses de préstamos exactos como tu banco: ves el mismo “Balance a la fecha” que el banco, el interés acumulado desde tu último pago aparte y cuánto de tu cuota se va en intereses'] },
+  { v: '1.7.2', f: 'Noviembre 2026', items: ['Elige tu país (con su bandera) y tu moneda principal: RD$ o US$. Toda la app se muestra en ella y la cambias cuando quieras en Ajustes', 'Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”', 'Intereses de préstamos exactos como tu banco: ves el mismo “Balance a la fecha” que el banco, el interés acumulado desde tu último pago aparte y cuánto de tu cuota se va en intereses'] },
   { v: '1.7.0', f: 'Noviembre 2026', items: ['Pagos cada varios meses: bimestral, trimestral, cuatrimestral, semestral o anual (ej. la universidad)', 'Solo cuentan como gasto el mes que te toca y te avisa antes de la fecha', 'Si te ayudan con una parte (beca o subsidio), te digo cuánto sale de tu bolsillo', 'Opción de apartar un poco cada mes: creo una meta y cuando pagas empieza de cero para el próximo'] },
   { v: '1.6.0', f: 'Noviembre 2026', items: ['Gastos fijos que pagas por partes: cada semana, cada quincena o varias veces al mes (ej. peluquería RD$450 cada sábado)', 'La app calcula sola si el mes trae 4 o 5 semanas y vas marcando cada pago', '“¿Sabías que puedes…?”: Hannah te enseña la app poco a poco, sin saturarte', 'Tutorial nuevo y completo, por capítulos: desde cómo te avisa hasta cada función', 'Montos siempre con centavos exactos y préstamos conectados a su cuota por terminal'] },
   { v: '1.5.0', f: 'Noviembre 2026', items: ['Hannah te acompaña: te celebra cuando vas bien con el ahorro y te frena con cariño cuando te pasas', 'Consejo diario de Hannah como notificación a las 10:00 a. m. (lo activas o apagas en Ajustes)', 'Avisos de días feriados de República Dominicana, un día antes y el mismo día', 'Modo Navidad automático en diciembre, con Hannah de gorrito', 'Acerca de más simple: solo las últimas novedades'] },
@@ -4956,10 +4995,10 @@ function hnInicio() {
 const hnSyncOk = () => !nubeConfigurada() || !!(DB && USR && S.nubeUid === UIDV);
 function hnAuto() {
   hnMontar(); hnBtnVis(); perfilVigilar(); hnArrancarDia(); if (typeof pushAgendaSync === 'function') pushAgendaSync();
-  if (HN.auto || !hnSyncOk() || !S.cfg || !S.cfg.onboarded || !perfilOk() || hnEstado().visto === APP_VER) return;
+  if (HN.auto || !hnSyncOk() || !S.cfg || !S.cfg.onboarded || !perfilCompleto() || hnEstado().visto === APP_VER) return;
   HN.auto = true;
   setTimeout(() => {
-    const listo = hnSyncOk() && S.cfg && S.cfg.onboarded && hnEstado().visto !== APP_VER && !OB && !pfAbierto() && perfilOk() && !($('#auth') && !$('#auth').hidden) && $('#sheetWrap').hidden;
+    const listo = hnSyncOk() && S.cfg && S.cfg.onboarded && hnEstado().visto !== APP_VER && !OB && !pfAbierto() && perfilCompleto() && !($('#auth') && !$('#auth').hidden) && $('#sheetWrap').hidden;
     if (!listo) { HN.auto = false; return; }
     hnBienvenida(hnEstado().visto ? 'novedades' : 'update');
   }, 1300);
@@ -5151,6 +5190,7 @@ const COACH = [
   { cap: '6 · Tus ahorros', tab: 'ahorro', el: () => hnSec('Mis metas') || hnSec('Metas') || $('#view section.note'), pose: 'ahorra', t: 'Tus metas', x: 'Dime “quiero ahorrar para un carro” y te armo el plan: cuánto apartar al mes y para cuándo. Te celebro al 25, 50 y 75%… ¡y cuando la logres! 🎉' },
   // Capítulo 7 · Ajustes
   { cap: '7 · Ajustes', tab: 'inicio', el: () => $('#view header [data-act=ajustes]'), pose: 'anota', t: 'Ajustes', x: 'En el engranaje está tu configuración. Te enseño lo más útil.' },
+  { cap: '7 · Ajustes', sheet: true, el: () => $('#paisPanel'), pose: 'explica', t: 'Tu país y tu moneda', x: () => `Aquí eliges el país donde vives y tu moneda principal (ahora ${SYM()}). En ella te muestro tus totales. La cambias cuando quieras, y puedes seguir anotando gastos en RD$ o US$.` },
   { cap: '7 · Ajustes', sheet: true, el: () => $('#pfPanel'), pose: 'celebra', t: 'Tu perfil', x: 'Aquí ves lo que me contaste de ti. Gracias a eso te hablo como se debe y, el día de tu cumpleaños, te tengo una sorpresa. 🎂' },
   { cap: '7 · Ajustes', sheet: true, el: () => $('#notifPanel'), pose: 'saluda', t: 'Avisos en tu celular', x: 'Aquí activas mi consejo diario y los recordatorios de pagos: el día que te toca pagar la tarjeta, un préstamo, la luz o la universidad, te aviso. Llegan a las 10:00 a. m., pero tú eliges la hora. Cada uno se apaga por separado.' },
   { cap: '7 · Ajustes', sheet: true, el: () => hnPanelDe('Exportar y recordatorios'), pose: 'piensa', t: 'Excel y Calendario', x: 'Lleva tus números a Excel o pon tus fechas de corte, pago y cobro en el Calendario del iPhone, con alarma.' },
@@ -5315,7 +5355,7 @@ function hnRegParse(raw) {
     : /me pagaron|cobre|recibi|me entraron|me dieron|me depositaron|vendi|un ingreso|ingreso de/.test(s) ? 'ingreso' : 'gasto';
   const sm = hnLimpiarMonto(raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
   d.monto = hnMonto(sm);
-  d.mon = /dolar|dolares|usd|us\$|\bus\b|\bdls\b/.test(s) ? 'US' : 'RD';
+  d.mon = /dolar|dolares|usd|us\$|\bus\b|\bdls\b/.test(s) ? 'US' : /\bpesos?\b|rd\$|\bdop\b/.test(s) ? 'RD' : MB();
   d.fecha = hnFechaDe(s);
   // Método de pago: primero el nombre de una tarjeta o su terminal
   const tcs = S.cfg.tarjetas.map(t => ({ t, n: hnNorm(t.n) })).filter(x => x.n);
@@ -5640,7 +5680,7 @@ function hnDatos(s, raw = '') {
   if (m && !/^(cuanto|quien|que)/.test(m[1])) {
     const monto = hnMonto(hnLimpiarMonto(String(raw).toLowerCase())); if (!(monto > 0)) return hnSay('¿Cuánto te debe? Escríbelo así: “Emilio me debe 1,000 y me paga el 30”.', [chip('Menú', 'menu')]), true;
     const n = m[1].trim().replace(/\b\w/g, x => x.toUpperCase()), f = /paga|pagara|devuelve/.test(s) ? hnFechaFutura(s.replace(/.*(paga|pagara|devuelve)/, '')) : '';
-    const monC = /dolar|usd/.test(s) ? 'US' : 'RD';
+    const monC = /dolar|usd/.test(s) ? 'US' : /\bpesos?\b/.test(s) ? 'RD' : MB();
     S.cfg.porCobrar = [...(S.cfg.porCobrar || []), { id: uid(), n, m: monto, mon: monC, fecha: f && f !== hoyISO() ? f : '', nota: '', creado: hoyISO(), abonos: [] }]; saveCfg(); render();
     return hnSay([`Listo, anoté que <b>${esc(n)}</b> te debe <b>${money(monto, monC)}</b>${f && f !== hoyISO() ? ` y que te paga el <b>${fechaCorta(parseISO(f))}</b>. Ese día te lo recuerdo. 📌` : '. Si te dice cuándo te paga, ponle la fecha y te lo recuerdo.'}`],
       [chip('Ver quién me debe', 'ir:tarjetas', 'user', true), chip('Ponerle fecha', 'act:verCobrar:' + S.cfg.porCobrar[S.cfg.porCobrar.length - 1].id, 'calendar'), chip('Menú', 'menu', 'grid')]), true;
@@ -5650,6 +5690,7 @@ function hnDatos(s, raw = '') {
   if (m) { const c = porCobrar().find(x => hnNorm(x.n).split(' ')[0] === m[1] || hnNorm(x.n) === m[1]); if (c) { const pend = pendCobrar(c); return hnSay(pend > 0 ? `<b>${esc(c.n)}</b> te debe <b>${money(pend, c.mon)}</b>${c.fecha ? ` y quedó en pagarte el ${fechaCorta(parseISO(c.fecha))}${c.fecha < hoyISO() ? ' (ya pasó)' : ''}` : ''}.` : `<b>${esc(c.n)}</b> ya te pagó todo. 🙌`, [chip('Ver detalle', 'verCobrarHn:' + c.id, 'user', true), chip('Menú', 'menu', 'grid')]), true; } }
   // Feriados y fechas especiales
   if (typeof feriadosRD === 'function' && !/ahorr/.test(s) && /feriado|nochebuena|navidad|ano nuevo|dia libre|puente|fin de semana largo|reyes|semana santa|viernes santo|independencia|altagracia|restauracion|mercedes|constitucion|corpus|dia de las madres|dia de los padres/.test(s)) {
+    if (typeof enRD === 'function' && !enRD()) return hnSay([`Los días feriados que conozco son los de República Dominicana 🇩🇴, y tú vives en ${bandera(paisU())} ${esc(paisNombre(paisU()))}.`, 'Igual te felicito en Navidad y Año Nuevo. 🎄'], MENU()), true;
     const hoy = hoyISO(), fin = iso(new Date(new Date().getFullYear() + 1, 11, 31)), l = feriadosRD(hoy, fin);
     const claves = [['nochebuena', 'Nochebuena'], ['navidad', 'Navidad'], ['ano nuevo', 'Año Nuevo'], ['reyes', 'Reyes'], ['viernes santo', 'Viernes Santo'], ['semana santa', 'Viernes Santo'], ['independencia', 'Independencia'], ['altagracia', 'Altagracia'], ['restauracion', 'Restauración'], ['mercedes', 'Mercedes'], ['constitucion', 'Constitución'], ['corpus', 'Corpus'], ['madres', 'Madres'], ['padres', 'Padres']];
     const k = claves.find(([re]) => s.includes(re));
@@ -5882,7 +5923,7 @@ function hnDelDia() {
   hnBurbuja(msg.html, msg);
 }
 function hnArrancarDia() {
-  if (HN.diaHecho || !S.cfg || !S.cfg.onboarded || !perfilOk() || pfAbierto() || hnEstado().visto !== APP_VER || !hnSyncOk()) return;
+  if (HN.diaHecho || !S.cfg || !S.cfg.onboarded || !perfilCompleto() || pfAbierto() || hnEstado().visto !== APP_VER || !hnSyncOk()) return;
   HN.diaHecho = true; setTimeout(() => { if (!HN.open && !HN.tour) hnDelDia(); }, 2200);
 }
 
@@ -5926,7 +5967,7 @@ const H_SABIAS = [
   { id: 'topes', t: 'ponerle un tope a una categoría (como comida fuera) y te aviso con cariño cuando te acerques?', act: 'tab:plan', b: 'Ir a mi plan', si: () => !S.cfg.categorias.some(c => num(c.tope) > 0) },
   { id: 'preguntas', t: 'preguntarme “¿en qué gasto más este mes?” y te digo exactamente a dónde se va tu dinero?', q: 'en que gasto mas este mes', b: 'Preguntar' },
   { id: 'interes', t: 'preguntarme “¿cuánto interés pago al día?” y te muestro lo que te cuestan tus préstamos?', q: 'cuanto interes pago al dia', b: 'Preguntar', si: () => S.cfg.prestamos.some(p => num(p.tasa) > 0) },
-  { id: 'feriados', t: 'preguntarme “¿cuándo es el próximo feriado?”? Y te aviso un día antes de cada uno.', q: 'cuando es el proximo feriado', b: 'Preguntar' },
+  { id: 'feriados', t: 'preguntarme “¿cuándo es el próximo feriado?”? Y te aviso un día antes de cada uno.', q: 'cuando es el proximo feriado', b: 'Preguntar', si: () => enRD() },
   { id: 'calendario', t: 'poner tus fechas de corte y pago en el Calendario del iPhone, con alarma, aunque no abras la app?', act: 'act:calendario', b: 'Abrir' },
   { id: 'excel', t: 'descargar todos tus números en Excel con un toque?', act: 'act:excel', b: 'Descargar' },
   { id: 'push', t: 'recibir en tu celular un aviso el día que te toca pagar la tarjeta, el préstamo o la luz, y mi consejo diario? Tú eliges la hora. Se activa en Ajustes.', act: 'act:ajustes', b: 'Ir a Ajustes', si: () => typeof nubeConfigurada === 'function' && nubeConfigurada() && hnLS('hn-push') !== 'on' },
@@ -5974,6 +6015,8 @@ function sexoU() {
 const esMujer = () => sexoU() === 'm';
 function gx(s) {
   if (s == null) return s; s = String(s);
+  if (s.indexOf('{') < 0) return s;
+  if (s.indexOf('{$}') >= 0) s = s.split('{$}').join(SYM());   // ejemplos con la moneda del usuario
   if (s.indexOf('|') < 0) return s;
   const m = esMujer();
   return s.replace(PF_RE, (_, a, b) => m ? b : a);
@@ -6039,30 +6082,38 @@ function cumpleConfeti() {
 
 /* ---------- Tomar el perfil de la cuenta (se guardó al registrarse) ---------- */
 let PF_USER = null, PF_ALTA = null;
+const perfilCompleto = () => perfilOk() && paisOk();
 function perfilDeCuenta(user) {
   const u = user || PF_USER;
   let md = u && u.user_metadata;
   if (!(md && md.sexo) && PF_ALTA && u && String(u.email || '').toLowerCase() === PF_ALTA.email) md = PF_ALTA;
-  if (perfilOk() || !md || !(md.sexo === 'h' || md.sexo === 'm') || !nacValida(md.nac)) return false;
-  S.cfg.perfil = { sexo: md.sexo, nac: md.nac, t: Date.now() }; saveCfg(); pfRecordar();
-  return true;
+  if (!md || !S.cfg) return false;
+  let cambio = false;
+  if (!perfilOk() && (md.sexo === 'h' || md.sexo === 'm') && nacValida(md.nac)) { S.cfg.perfil = { sexo: md.sexo, nac: md.nac, t: Date.now() }; cambio = true; }
+  // País y moneda del registro: solo si todavía no los tiene (después se cambian en Ajustes)
+  if (!paisOk() && /^[A-Z]{2}$/.test(md.pais || '') && (md.moneda === 'RD' || md.moneda === 'US') && !(md.moneda !== MB() && hayMontos())) {
+    if (md.moneda !== MB()) cambiarMoneda(md.moneda, 'simbolo');
+    S.cfg.pais = md.pais; S.cfg.moneda = md.moneda; cambio = true;
+  }
+  if (cambio) { guardarTodo(); pfRecordar(); }
+  return cambio && perfilCompleto();
 }
 function pfRecordar() {
   try { if (USR && perfilOk()) guardarUltimo({ ...(ultimoUsuario() || {}), id: USR.id, email: USR.email, sexo: S.cfg.perfil.sexo }); } catch (e) {}
 }
 
 /* ---------- La pantalla que lo pide (no se puede cerrar sin completarla) ---------- */
-const PF = { abierto: false, next: null, sexo: '', nac: '', paso: 1, err: '' };
+const PF = { abierto: false, next: null, sexo: '', nac: '', pais: '', moneda: '', monTocada: false, modo: 'convertir', paso: 1, err: '' };
 const pfAbierto = () => PF.abierto;
 function perfilAsegurar(next) {
-  if (perfilOk()) { pfRecordar(); if (next) next(); return; }
+  if (perfilCompleto()) { pfRecordar(); if (next) next(); return; }
   if (perfilDeCuenta()) { if (next) next(); return; }
   if (next) PF.next = next;
   perfilGate();
 }
 // Red de seguridad: se revisa en cada render, cuando los datos ya están listos
 function perfilVigilar() {
-  if (PF.abierto || !S.cfg || perfilOk() || OB) return;
+  if (PF.abierto || !S.cfg || perfilCompleto() || OB) return;
   if (typeof hnSyncOk === 'function' && !hnSyncOk()) return;
   const au = $('#auth'); if (au && !au.hidden) return;
   if (perfilDeCuenta()) return;
@@ -6071,34 +6122,46 @@ function perfilVigilar() {
 function perfilGate() {
   let el = $('#pf');
   if (!el) { el = document.createElement('div'); el.id = 'pf'; el.className = 'pf'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'pfTit'); document.body.appendChild(el); }
+  if (!PF.abierto) {
+    PF.pais = paisU() || paisSugerido();
+    PF.moneda = S.cfg.moneda === 'RD' || S.cfg.moneda === 'US' ? S.cfg.moneda : monedaDePais(PF.pais);
+  }
   PF.abierto = true; el.hidden = false; document.body.classList.add('pf-on'); document.body.style.overflow = 'hidden';
   if (typeof hnBurbujaFuera === 'function') hnBurbujaFuera();
   if (typeof hnCerrar === 'function' && HN && HN.open) hnCerrar();
   pfDibujar();
 }
+const pfNecesitaModo = () => !paisOk() && PF.moneda !== MB() && hayMontos();
 function pfDibujar() {
   const el = $('#pf'); if (!el) return;
-  const nuevo = !(S.cfg && S.cfg.onboarded), sx = PF.sexo, m = sx === 'm';
+  const nuevo = !(S.cfg && S.cfg.onboarded), sx = PF.sexo, m = sx === 'm', pideP = !perfilOk(), pideL = !paisOk();
   const err = PF.err ? `<div class="auth-err" role="alert">${esc(PF.err)}</div>` : '';
   let body;
   if (PF.paso === 1) {
-    body = `<h2 id="pfTit">${nuevo ? 'Antes de empezar, cuéntame de ti' : '¡Hola de nuevo! Me falta conocerte un poquito'}</h2>
-      <p class="pf-sub">Así te hablo como se debe y, el día de tu cumpleaños, te tengo una sorpresa 🎂${nuevo ? '' : ' Tus datos siguen intactos.'}</p>
-      <div class="f"><span>¿Cómo te identificas?</span>
+    const tit = nuevo ? 'Antes de empezar, cuéntame de ti' : pideP ? '¡Hola de nuevo! Me falta conocerte un poquito' : '¡Hola de nuevo! ¿Desde dónde me usas?';
+    const sub = pideP ? `Así te hablo como se debe y, el día de tu cumpleaños, te tengo una sorpresa 🎂${nuevo ? '' : ' Tus datos siguen intactos.'}` : 'Así te muestro tus números en tu moneda. Tus datos siguen intactos.';
+    body = `<h2 id="pfTit">${tit}</h2>
+      <p class="pf-sub">${sub}</p>
+      ${pideP ? `<div class="f"><span>¿Cómo te identificas?</span>
         <div class="pf-sx" role="radiogroup" aria-label="Sexo">
           <button type="button" role="radio" aria-checked="${sx === 'h'}" class="${sx === 'h' ? 'on' : ''}" data-pf="sexo" data-v="h"><span aria-hidden="true">👨</span>Hombre</button>
           <button type="button" role="radio" aria-checked="${sx === 'm'}" class="${sx === 'm' ? 'on' : ''}" data-pf="sexo" data-v="m"><span aria-hidden="true">👩</span>Mujer</button>
         </div></div>
-      <label class="f">Fecha de nacimiento<input class="in" type="date" id="pfNac" min="1900-01-01" max="${hoyISO()}" value="${esc(PF.nac)}"></label>
-      <div class="pf-nota">${svgI('lock', 15, 2)}<span>Esto se guarda <b>una sola vez</b> y después no se puede cambiar. Revísalo bien.</span></div>
+      <label class="f">Fecha de nacimiento<input class="in" type="date" id="pfNac" min="1900-01-01" max="${hoyISO()}" value="${esc(PF.nac)}"></label>` : ''}
+      ${pideL ? `<div class="f"><span>País donde vives</span>${paisPicker('pkPf', PF.pais)}</div>
+      <div class="f"><span>Tu moneda principal</span>${monedaSeg('pf', PF.moneda)}</div>` : ''}
+      <div class="pf-nota">${svgI('lock', 15, 2)}<span>${pideP ? 'Tu sexo y tu fecha de nacimiento se guardan <b>una sola vez</b> y después no se pueden cambiar. ' : ''}${pideL ? 'El país y la moneda los cambias cuando quieras en Ajustes.' : ''}</span></div>
       ${err}
       <button class="btn" type="button" data-pf="seguir">Continuar</button>`;
   } else {
-    const e = (() => { const [y, mm, d] = pfPartes(PF.nac), h = new Date(); let a = h.getFullYear() - y; if (h.getMonth() + 1 < mm || (h.getMonth() + 1 === mm && h.getDate() < d)) a--; return a; })();
+    const e = pideP ? (() => { const [y, mm, d] = pfPartes(PF.nac), h = new Date(); let a = h.getFullYear() - y; if (h.getMonth() + 1 < mm || (h.getMonth() + 1 === mm && h.getDate() < d)) a--; return a; })() : 0;
     body = `<h2 id="pfTit">¿Está todo bien?</h2>
-      <p class="pf-sub">Revísalo con calma: después no se puede cambiar.</p>
-      <div class="pf-res"><div><span class="muted small">Sexo</span><b>${m ? '👩 Mujer' : '👨 Hombre'}</b></div>
-        <div><span class="muted small">${m ? 'Nacida' : 'Nacido'} el</span><b>${esc(nacTexto(PF.nac))}</b><span class="muted small">${e} años</span></div></div>
+      <p class="pf-sub">${pideP ? 'Revísalo con calma: tu sexo y tu fecha de nacimiento no se pueden cambiar después.' : 'Revísalo; si te equivocas, lo cambias en Ajustes.'}</p>
+      <div class="pf-res">${pideP ? `<div><span class="muted small">Sexo</span><b>${m ? '👩 Mujer' : '👨 Hombre'}</b></div>
+        <div><span class="muted small">${m ? 'Nacida' : 'Nacido'} el</span><b>${esc(nacTexto(PF.nac))}</b><span class="muted small">${e} años</span></div>` : ''}
+        ${pideL ? `<div><span class="muted small">País</span><b>${bandera(PF.pais)} ${esc(paisNombre(PF.pais))}</b></div>
+        <div><span class="muted small">Moneda principal</span><b>${SYM(PF.moneda)} · ${PF.moneda === 'RD' ? 'Pesos' : 'Dólares'}</b></div>` : ''}</div>
+      ${pfNecesitaModo() ? `<div id="pfModo">${paisModoHTML(PF.moneda).replace(`value="${PF.modo === 'simbolo' ? 'convertir' : 'simbolo'}" checked`, `value="${PF.modo === 'simbolo' ? 'convertir' : 'simbolo'}"`)}</div>` : ''}
       ${err}
       <button class="btn" type="button" data-pf="guardar">Sí, está bien</button>
       <button class="btn ghost" type="button" data-pf="corregir">Corregir</button>`;
@@ -6106,21 +6169,41 @@ function pfDibujar() {
   el.innerHTML = `<div class="pf-in"><div class="pf-card">
     <img class="pf-han" src="${HANNAH_IMG.saluda || HANNAH_IMG.avatar}" alt="Hannah">
     ${body}</div></div>`;
+  if (PF.paso === 2 && pfNecesitaModo() && PF.modo === 'simbolo') { const r = el.querySelector('input[name=pmodo][value=simbolo]'); if (r) r.checked = true; }
+  const g = el.querySelector('.pf-mon'); if (g && PF.monTocada) g.dataset.tocado = '1';
 }
-function pfLeer() { const n = document.getElementById('pfNac'); if (n) PF.nac = n.value; }
+function pfLeer() {
+  const n = document.getElementById('pfNac'); if (n) PF.nac = n.value;
+  const pk = document.getElementById('pkPf'); if (pk) PF.pais = paisElegido(pk);
+  const g = document.querySelector('#pf .pf-mon'); if (g) { const v = monedaLeida(g.parentElement); if (v) PF.moneda = v; if (g.dataset.tocado) PF.monTocada = true; }
+  const md = document.querySelector('#pf input[name=pmodo]:checked'); if (md) PF.modo = md.value;
+}
 function pfAccion(a, b) {
   if (a === 'sexo') { pfLeer(); PF.sexo = b.dataset.v; PF.err = ''; document.querySelectorAll('#pf [data-pf=sexo]').forEach(x => { const on = x.dataset.v === PF.sexo; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); const er = $('#pf .auth-err'); if (er) er.remove(); return; }
   if (a === 'seguir') {
     pfLeer();
-    if (!PF.sexo) { PF.err = 'Elige si eres hombre o mujer.'; return pfDibujar(); }
-    if (!PF.nac) { PF.err = 'Escribe tu fecha de nacimiento.'; return pfDibujar(); }
-    if (!nacValida(PF.nac)) { PF.err = 'Esa fecha no es válida. Revisa el día, el mes y el año.'; return pfDibujar(); }
+    if (!perfilOk()) {
+      if (!PF.sexo) { PF.err = 'Elige si eres hombre o mujer.'; return pfDibujar(); }
+      if (!PF.nac) { PF.err = 'Escribe tu fecha de nacimiento.'; return pfDibujar(); }
+      if (!nacValida(PF.nac)) { PF.err = 'Esa fecha no es válida. Revisa el día, el mes y el año.'; return pfDibujar(); }
+    }
+    if (!paisOk()) {
+      if (!/^[A-Z]{2}$/.test(PF.pais || '')) { PF.err = 'Elige el país donde vives.'; return pfDibujar(); }
+      if (PF.moneda !== 'RD' && PF.moneda !== 'US') { PF.err = 'Elige tu moneda.'; return pfDibujar(); }
+    }
     PF.err = ''; PF.paso = 2; return pfDibujar();
   }
-  if (a === 'corregir') { PF.paso = 1; PF.err = ''; return pfDibujar(); }
+  if (a === 'corregir') { pfLeer(); PF.paso = 1; PF.err = ''; return pfDibujar(); }
   if (a === 'guardar') {
-    if (!perfilOk()) { S.cfg.perfil = { sexo: PF.sexo, nac: PF.nac, t: Date.now() }; saveCfg(); }
-    try { if (typeof SB !== 'undefined' && SB && USR) SB.auth.updateUser({ data: { sexo: S.cfg.perfil.sexo, nac: S.cfg.perfil.nac } }).catch(() => {}); } catch (e) {}
+    pfLeer();
+    const meta = {};
+    if (!perfilOk()) { S.cfg.perfil = { sexo: PF.sexo, nac: PF.nac, t: Date.now() }; meta.sexo = PF.sexo; meta.nac = PF.nac; }
+    if (!paisOk()) {
+      cambiarMoneda(PF.moneda, hayMontos() ? PF.modo : 'simbolo');
+      S.cfg.pais = PF.pais; S.cfg.moneda = PF.moneda; meta.pais = PF.pais; meta.moneda = PF.moneda;
+    }
+    guardarTodo();
+    try { if (typeof SB !== 'undefined' && SB && USR && Object.keys(meta).length) SB.auth.updateUser({ data: meta }).catch(() => {}); } catch (e) {}
     pfRecordar(); perfilCerrar();
     render(); toast('¡Gracias! Ya te conozco mejor 💚');
     const nx = PF.next; PF.next = null; if (nx) setTimeout(nx, 250);
@@ -6128,7 +6211,7 @@ function pfAccion(a, b) {
 }
 function perfilCerrar() {
   const el = $('#pf'); if (el) { el.hidden = true; el.innerHTML = ''; }
-  Object.assign(PF, { abierto: false, sexo: '', nac: '', paso: 1, err: '' });
+  Object.assign(PF, { abierto: false, sexo: '', nac: '', pais: '', moneda: '', monTocada: false, modo: 'convertir', paso: 1, err: '' });
   document.body.classList.remove('pf-on'); document.body.style.overflow = '';
   if (typeof hnBtnVis === 'function') hnBtnVis();
 }
@@ -6155,6 +6238,200 @@ hnDatos = function (s, raw) {
   }
   return hnDatosSinPerfil(s, raw);
 };
+
+/* ============ País y moneda del usuario (se piden al crear la cuenta; se cambian en Ajustes) ============ */
+// La moneda elegida es la "moneda principal": totales, presupuesto, metas, Hannah y Excel se muestran en ella.
+// Cada movimiento, gasto fijo o tarjeta puede seguir en RD$ o US$; se convierte con la tasa de Ajustes.
+const PAIS_COD = ('DO US AF AX AL DE AD AO AI AQ AG SA DZ AR AM AW AU AT AZ BS BD BB BH BE BZ BJ BM BY BO BQ BA BW BR BN BG BF BI BT CV KH CM CA QA TD CL CN CY CO KM CG CD KP KR CR CI HR CU CW DK DM EC EG SV AE ER SK SI ES EE SZ ET PH FI FJ FR GA GM GE GH GI GD GR GL GP GU GT GF GG GN GQ GW GY HT HN HK HU IN ID IQ IR IE BV IM CX NF IS KY CC CK FO GS HM FK MP MH UM PN SB TC VG VI IL IT JM JP JE JO KZ KE KG KI XK KW LA LS LV LB LR LY LI LT LU MO MK MG MY MW MV ML MT MA MQ MU MR YT MX FM MD MC MN ME MS MZ MM NA NR NP NI NE NG NU NO NC NZ OM NL PK PW PS PA PG PY PE PF PL PT PR GB CF CZ DO RE RW RO RU EH WS AS BL KN SM MF PM VC SH LC ST SN RS SC SL SG SX SY SO LK ZA SD SS SE CH SR SJ TH TW TZ TJ IO TF TL TG TK TO TT TN TM TR TV UA UG UY UZ VU VA VE VN WF YE DJ ZM ZW').split(' ');
+const PAIS_RESPALDO = { DO: 'República Dominicana', US: 'Estados Unidos', PR: 'Puerto Rico', ES: 'España', MX: 'México', CO: 'Colombia', VE: 'Venezuela', HT: 'Haití', PA: 'Panamá', CU: 'Cuba' };
+let PAIS_NOMBRES = null;
+function paisNombre(c) {
+  if (!c) return '';
+  try { PAIS_NOMBRES ||= new Intl.DisplayNames(['es'], { type: 'region' }); const n = PAIS_NOMBRES.of(c); if (n && n !== c) return n; } catch (e) {}
+  return PAIS_RESPALDO[c] || c;
+}
+const bandera = c => /^[A-Z]{2}$/.test(c || '') ? String.fromCodePoint(...[...c].map(x => 127397 + x.charCodeAt(0))) : '🌎';
+let PAISES_CACHE = null;
+function paises() {
+  if (PAISES_CACHE) return PAISES_CACHE;
+  const vistos = new Set(), l = [];
+  for (const c of PAIS_COD) if (!vistos.has(c)) { vistos.add(c); l.push({ c, n: paisNombre(c) }); }
+  const top = l.filter(x => x.c === 'DO' || x.c === 'US'), resto = l.filter(x => x.c !== 'DO' && x.c !== 'US').sort((a, b) => a.n.localeCompare(b.n, 'es'));
+  return (PAISES_CACHE = [...top, ...resto]);
+}
+const sinTilde = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+// Adivinar el país por la zona horaria del teléfono (solo para preseleccionar; el usuario confirma)
+function paisSugerido() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const m = { 'America/Santo_Domingo': 'DO', 'America/Puerto_Rico': 'PR', 'America/Mexico_City': 'MX', 'America/Bogota': 'CO', 'America/Caracas': 'VE', 'America/Port-au-Prince': 'HT', 'America/Panama': 'PA', 'America/Havana': 'CU', 'Europe/Madrid': 'ES', 'America/Lima': 'PE', 'America/Santiago': 'CL', 'America/Argentina/Buenos_Aires': 'AR', 'America/Guatemala': 'GT', 'America/Costa_Rica': 'CR', 'America/El_Salvador': 'SV', 'America/Tegucigalpa': 'HN', 'America/Managua': 'NI', 'America/Guayaquil': 'EC', 'America/Montevideo': 'UY', 'America/Asuncion': 'PY', 'America/La_Paz': 'BO', 'America/Toronto': 'CA' };
+    if (m[tz]) return m[tz];
+    if (/^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Indiana)/.test(tz) || tz === 'Pacific/Honolulu') return 'US';
+  } catch (e) {}
+  return 'DO';
+}
+const monedaDePais = c => c === 'DO' ? 'RD' : 'US';
+
+/* ---------- Moneda principal ---------- */
+if (typeof CI === 'object') { CI.down ||= '<path d="M6 9l6 6 6-6"/>'; CI.globe ||= '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9z"/>'; }
+// MB() y SYM() están junto a money() (patch.py) para que existan desde el principio
+const MON_TXT = { RD: 'Pesos dominicanos (RD$)', US: 'Dólares (US$)' };
+const paisOk = () => !!(S.cfg && /^[A-Z]{2}$/.test(S.cfg.pais || '') && (S.cfg.moneda === 'RD' || S.cfg.moneda === 'US'));
+const paisU = () => (S.cfg && S.cfg.pais) || '';
+const banderaU = () => paisU() ? bandera(paisU()) : '';
+const enRD = () => !paisU() || paisU() === 'DO';   // funciones de RD (feriados, ISR, regalía) se muestran a quien vive en RD
+
+/* ---------- ¿El usuario ya tiene montos guardados? ---------- */
+function hayMontos() {
+  const c = S.cfg; if (!c) return false;
+  if (allMovs().length) return true;
+  if ((c.ingresos || []).some(i => num(i.m) > 0) || (c.fijos || []).some(f => num(f.m) > 0 || num(f.parte) > 0)) return true;
+  if ((c.tarjetas || []).length || (c.prestamos || []).length || (c.cuentasAhorro || []).length || (c.porCobrar || []).length || (c.extras || []).length) return true;
+  if ((c.metas || []).some(g => num(g.obj) > 0 || num(g.inicial) > 0) || (c.categorias || []).some(x => num(x.tope) > 0)) return true;
+  if (num(c.nomina && c.nomina.bruto) > 0 || num(c.incPromedio) > 0) return true;
+  return Object.values(S.months).some(mm => Object.keys(mm.ing || {}).length);
+}
+
+/* ---------- Cambiar la moneda principal ----------
+   modo 'convertir': los montos se mantienen en su valor real (a la tasa de hoy).
+   modo 'simbolo'  : los números ya estaban en la moneda nueva; solo cambia el símbolo. */
+function cambiarMoneda(nueva, modo) {
+  const c = S.cfg, vieja = MB();
+  if (nueva !== 'RD' && nueva !== 'US') return false;
+  if (nueva === vieja) { c.moneda = nueva; return true; }
+  // Respaldo local antes de tocar los números (por si acaso)
+  try { localStorage.setItem(LS_BASE + '-antes-de-moneda', JSON.stringify({ fecha: new Date().toISOString(), cfg: c, months: S.months })); } catch (e) {}
+  const tasa = num(c.tasa) || 65;
+  const cv = v => { const n = num(v); if (!n) return v; return Math.round((vieja === 'RD' ? n / tasa : n * tasa) * 100) / 100; };
+  const fijar = o => { if (o && !o.mon) o.mon = vieja; };          // lo que tiene moneda propia queda en su moneda
+  const reetiquetar = o => { if (o && (o.mon || vieja) === vieja) o.mon = nueva; };
+  const conMon = [...(c.fijos || []), ...(c.tarjetas || []), ...(c.porCobrar || []), ...allMovs()];
+  if (modo === 'convertir') {
+    conMon.forEach(fijar);
+    for (const i of c.ingresos || []) i.m = cv(i.m);
+    if (c.nomina) { c.nomina.bruto = cv(c.nomina.bruto); c.nomina.poliza = cv(c.nomina.poliza); }
+    if (c.incentivos) { c.incentivos.ticket = cv(c.incentivos.ticket); c.incentivos.ip = cv(c.incentivos.ip); }
+    for (const x of c.extras || []) x.monto = cv(x.monto);
+    c.incPromedio = cv(c.incPromedio);
+    for (const x of c.categorias || []) x.tope = cv(x.tope);
+    for (const g of c.metas || []) { g.obj = cv(g.obj); g.inicial = cv(g.inicial); if (g.mensual != null) g.mensual = cv(g.mensual); }
+    for (const p of c.prestamos || []) { p.m = cv(p.m); if (p.cap != null) p.cap = cv(p.cap); if (p.intIni != null) p.intIni = cv(p.intIni); }
+    if (c.navidad) { if (c.navidad.ingreso !== '' && c.navidad.ingreso != null) c.navidad.ingreso = cv(c.navidad.ingreso); for (const a of Object.values(c.navidad.anios || {})) { if (Array.isArray(a.meses)) a.meses = a.meses.map(cv); if (a.sueldo != null) a.sueldo = cv(a.sueldo); } }
+    for (const cu of c.cuentasAhorro || []) for (const rg of cu.registros || []) rg.monto = cv(rg.monto);
+    for (const mm of Object.values(S.months)) for (const k of Object.keys(mm.ing || {})) mm.ing[k] = cv(mm.ing[k]);
+  } else {
+    conMon.forEach(reetiquetar);
+  }
+  c.moneda = nueva;
+  return true;
+}
+function guardarTodo() { saveCfg(); for (const m of Object.keys(S.months)) saveMes(m); }
+
+/* ---------- El selector de país (con búsqueda y bandera) ---------- */
+function paisPicker(id, val) {
+  const v = val || '';
+  return `<div class="pais-pk" id="${id}" data-v="${esc(v)}">
+    <button type="button" class="in pais-btn" data-pk="abrir" aria-haspopup="listbox" aria-expanded="false"><span class="pais-f">${v ? bandera(v) : '🌎'}</span><span class="grow pais-n">${v ? esc(paisNombre(v)) : 'Elige tu país'}</span>${svgI('down', 16, 2)}</button>
+    <div class="pais-pop" hidden><input class="in" type="search" placeholder="Buscar país…" data-pk="q" autocomplete="off" aria-label="Buscar país"><div class="pais-list" role="listbox"></div></div></div>`;
+}
+function paisPintarLista(pk, q) {
+  const l = pk.querySelector('.pais-list'), s = sinTilde(q).trim(), v = pk.dataset.v;
+  const items = paises().filter(x => !s || sinTilde(x.n).includes(s) || x.c.toLowerCase() === s).slice(0, 260);
+  l.innerHTML = items.length ? items.map(x => `<button type="button" role="option" aria-selected="${x.c === v}" class="pais-op ${x.c === v ? 'on' : ''}" data-pk="op" data-c="${x.c}"><span class="pais-f">${bandera(x.c)}</span><span class="grow">${esc(x.n)}</span></button>`).join('') : '<div class="tiny muted" style="padding:10px">No encontré ese país.</div>';
+}
+function paisElegido(pk) { return pk ? pk.dataset.v || '' : ''; }
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-pk]'); if (!b) return;
+  const pk = b.closest('.pais-pk'); if (!pk) return;
+  if (b.dataset.pk === 'abrir') {
+    e.preventDefault();
+    const pop = pk.querySelector('.pais-pop'), abrir = pop.hidden;
+    pop.hidden = !abrir; b.setAttribute('aria-expanded', String(abrir));
+    if (abrir) { paisPintarLista(pk, ''); const sel = pk.querySelector('.pais-op.on'); if (sel) sel.scrollIntoView({ block: 'center' }); }
+  } else if (b.dataset.pk === 'op') {
+    e.preventDefault();
+    const c = b.dataset.c; pk.dataset.v = c;
+    pk.querySelector('.pais-btn .pais-f').textContent = bandera(c);
+    pk.querySelector('.pais-btn .pais-n').textContent = paisNombre(c);
+    pk.querySelector('.pais-pop').hidden = true; pk.querySelector('.pais-btn').setAttribute('aria-expanded', 'false');
+    pk.dispatchEvent(new CustomEvent('pais', { bubbles: true, detail: c }));
+  }
+});
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.pk === 'q') { const pk = e.target.closest('.pais-pk'); if (pk) paisPintarLista(pk, e.target.value); } });
+// Segmento de moneda reutilizable
+const monedaSeg = (name, v) => `<div class="pf-mon" role="radiogroup" aria-label="Moneda principal">${['RD', 'US'].map(m => `<button type="button" role="radio" aria-checked="${v === m}" class="${v === m ? 'on' : ''}" data-mon="${name}" data-v="${m}"><b>${SYM(m)}</b><span>${m === 'RD' ? 'Pesos dominicanos' : 'Dólares'}</span></button>`).join('')}</div>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-mon]'); if (!b) return;
+  e.preventDefault();
+  document.querySelectorAll(`[data-mon="${b.dataset.mon}"]`).forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+  const g = b.closest('.pf-mon'); if (g) { g.dataset.v = b.dataset.v; g.dataset.tocado = '1'; }
+});
+// Al elegir país, sugerir su moneda (si el usuario no la ha tocado)
+document.addEventListener('pais', e => {
+  const cont = e.target.closest('form, .pf-card, .sheet, #sheet') || document;
+  const g = cont.querySelector('.pf-mon'); if (!g || g.dataset.tocado) return;
+  const m = monedaDePais(e.detail); g.dataset.v = m;
+  g.querySelectorAll('[data-mon]').forEach(x => { const on = x.dataset.v === m; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+});
+const monedaLeida = cont => { const g = cont && cont.querySelector('.pf-mon .on'); return g ? g.dataset.v : ''; };
+
+/* ---------- En Ajustes: se puede cambiar cuando quieras ---------- */
+function paisPanel() {
+  const p = paisU(), m = MB();
+  return `<div class="panel pf-panel" id="paisPanel"><h3>País y moneda</h3>
+    <div class="pf-res"><div><span class="muted small">País</span><b>${p ? bandera(p) + ' ' + esc(paisNombre(p)) : '—'}</b></div>
+      <div><span class="muted small">Moneda principal</span><b>${SYM(m)} · ${m === 'RD' ? 'Pesos' : 'Dólares'}</b></div></div>
+    <button class="btn ghost" type="button" data-act="paisEditar" style="margin-top:10px">Cambiar país o moneda</button></div>`;
+}
+function paisEditar() {
+  const p = paisU() || paisSugerido(), m = S.cfg.moneda === 'US' || S.cfg.moneda === 'RD' ? S.cfg.moneda : monedaDePais(p);
+  openSheet(`${sheetH('País y moneda')}<div class="stack" id="paisForm">
+    <p class="small muted" style="margin:0">Tu moneda principal es en la que ves tus totales, tu presupuesto y tus metas. Puedes seguir anotando gastos en RD$ o US$: los convierto con tu tasa del dólar.</p>
+    <div class="f"><span>País donde vives</span>${paisPicker('pkAjustes', p)}</div>
+    <div class="f"><span>Moneda principal</span>${monedaSeg('aj', m)}</div>
+    <div id="paisModo"></div>
+    <div class="btns"><button class="btn" type="button" data-act="paisGuardar">Guardar</button></div></div>`);
+  const g = $('#paisForm .pf-mon'); if (g) g.dataset.tocado = '1';
+}
+function paisModoHTML(nueva) {
+  return `<div class="panel pf-modo" role="radiogroup" aria-label="¿Qué hago con tus montos?"><b>¿Qué hago con los montos que ya tienes?</b>
+    <label class="pf-op"><input type="radio" name="pmodo" value="convertir" checked><span><b>Convertirlos a ${SYM(nueva)}</b><span class="tiny muted">Mantienen su valor. Ej.: ${nueva === 'US' ? 'RD$' + fmtN(num(S.cfg.tasa) * 100, 2) + ' pasan a US$100.00' : 'US$100.00 pasan a RD$' + fmtN(num(S.cfg.tasa) * 100, 2)} (tasa ${fmtN(num(S.cfg.tasa), 2)}).</span></span></label>
+    <label class="pf-op"><input type="radio" name="pmodo" value="simbolo"><span><b>Ya estaban en ${nueva === 'US' ? 'dólares' : 'pesos'}</b><span class="tiny muted">Los números se quedan igual; solo cambia el símbolo.</span></span></label></div>`;
+}
+function paisGuardar() {
+  const f = $('#paisForm'); if (!f) return;
+  const p = paisElegido(f.querySelector('.pais-pk')), m = monedaLeida(f);
+  if (!p) return typeof avisoHoja === 'function' ? avisoHoja('Elige tu país.') : toast('Elige tu país.');
+  if (m !== 'RD' && m !== 'US') return typeof avisoHoja === 'function' ? avisoHoja('Elige tu moneda.') : toast('Elige tu moneda.');
+  if (m !== MB() && hayMontos()) {
+    const box = $('#paisModo');
+    if (!box.innerHTML) { box.innerHTML = paisModoHTML(m); box.scrollIntoView({ block: 'nearest' }); const bt = f.querySelector('[data-act=paisGuardar]'); if (bt) bt.textContent = 'Confirmar cambio'; return; }
+    const modo = (f.querySelector('input[name=pmodo]:checked') || {}).value || 'convertir';
+    cambiarMoneda(m, modo);
+  } else cambiarMoneda(m, 'simbolo');
+  S.cfg.pais = p; guardarTodo(); closeSheet(); render();
+  toast(`Listo: ${bandera(p)} ${paisNombre(p)} · ${SYM(m)}`);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-act=paisEditar],[data-act=paisGuardar]'); if (!b) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (b.dataset.act === 'paisEditar') paisEditar(); else paisGuardar();
+}, true);
+// Si al cambiar la moneda en el formulario el aviso de modo ya estaba, quitarlo para volver a preguntar
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#paisForm [data-mon]'); if (b) { const box = $('#paisModo'); if (box) box.innerHTML = ''; const bt = $('#paisForm [data-act=paisGuardar]'); if (bt) bt.textContent = 'Guardar'; } });
+
+/* ---------- Hannah: "¿en qué moneda estoy?", "cambiar mi moneda/país" ---------- */
+const hnDatosSinPais = hnDatos;
+hnDatos = function (s, raw) {
+  if (/\b(moneda|mi pais|de pais|cambiar pais|cambiar el pais|dolares o pesos|pesos o dolares)\b/.test(s) && !/\b(tasa|cuanto esta|a cuanto)\b/.test(s)) {
+    const cambiar = /\b(cambia|cambiar|cambio|poner|pon|quiero|mover|usar)\b/.test(s);
+    return hnSay([`Tu país es ${paisU() ? bandera(paisU()) + ' <b>' + esc(paisNombre(paisU())) + '</b>' : 'uno que todavía no me has dicho'} y tu moneda principal es <b>${SYM()}</b>: en ella te muestro tus totales, tu presupuesto y tus metas.`, cambiar ? 'Para cambiarlo ve a <b>Ajustes → País y moneda</b>. Si ya tienes montos, te pregunto si los convierto con tu tasa o si ya estaban en esa moneda.' : 'Puedes anotar gastos en RD$ o US$ cuando quieras: los convierto con tu tasa del dólar. Y lo cambias en Ajustes → País y moneda.'], [chip('Ir a Ajustes', 'act:ajustes', 'globe', true), chip('Menú', 'menu')]), true;
+  }
+  return hnDatosSinPais(s, raw);
+};
+// Recordar lo elegido en el formulario de registro aunque la pantalla se redibuje
+document.addEventListener('pais', e => { if (e.target.closest('#auForm') && typeof AUTH === 'object' && AUTH) AUTH.pais = e.detail; });
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#auForm [data-mon]'); if (b && typeof AUTH === 'object' && AUTH) AUTH.moneda = b.dataset.v; });
 
 /* Frases de ánimo de Hannah: celebra, anima y frena con cariño. Sin culpa, sin sermones.
    Placeholders por grupo (se reemplazan antes de mostrar):
@@ -6479,7 +6756,9 @@ function avisoFeriado(d = new Date()) {
   const hoy = isoL(d);
   const man = isoL(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 12));
   const elegir = fecha => {
-    const xs = FERIADOS_RD.filter(f => f.fecha === fecha);
+    // Quien no vive en RD solo recibe los días que se celebran en todas partes (Nochebuena, Navidad, Nochevieja, Año Nuevo)
+    const todos = typeof enRD !== 'function' || enRD();
+    const xs = FERIADOS_RD.filter(f => f.fecha === fecha && (todos || /-(12-24|12-25|12-31|01-01)$/.test(f.fecha)));
     return xs.find(f => f.tipo === 'feriado') || xs[0] || null;
   };
   const h = elegir(hoy);
@@ -6934,7 +7213,7 @@ function prSaldo(id) {
 /* ---------- Cuentas por cobrar ---------- */
 function formCobrar(id) {
   const c = id ? porCobrar().find(x => x.id === id) : null;
-  openForm({ title: c ? 'Editar cuenta por cobrar' : '¿Quién te debe?', values: c || { mon: 'RD' },
+  openForm({ title: c ? 'Editar cuenta por cobrar' : '¿Quién te debe?', values: c || { mon: MB() },
     note: 'Si te dio una fecha para pagarte, ponla y te lo recuerdo ese día en Pendientes, en la agenda y en tu Calendario.',
     fields: [{ k: 'n', label: 'Nombre', ph: 'Ej. Emilio' }, { k: 'm', label: 'Cuánto te debe', type: 'num' }, { k: 'mon', label: 'Moneda', type: 'select', options: MON_OPTS }, { k: 'fecha', label: '¿Cuándo te dijo que te paga? (opcional)', type: 'date' }, { k: 'nota', label: 'Nota (opcional)', ph: 'Ej. Le presté para la gasolina' }],
     onSave: o => {
