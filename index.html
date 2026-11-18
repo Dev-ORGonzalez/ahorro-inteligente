@@ -813,6 +813,16 @@ body.pf-on .hn-btn,body.pf-on .hn-burb{display:none!important}
   .note .big.sano{animation:none}
   .note .big.cerca{animation:none;color:#FFD45C}
 }
+/* Tutorial: ejemplo de las 3 zonas */
+.hc-zonas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0 2px}
+.hc-zona{display:grid;gap:4px;text-align:center;min-width:0}
+.hc-zona-t{font-size:10.5px;font-weight:800;letter-spacing:0;white-space:nowrap}
+.hc-zona-t.sano{color:#1E9E5A}.hc-zona-t.cerca{color:#B7860B}.hc-zona-t.excedido{color:#D9443B}
+.note.hc-zona-n{padding:9px 4px;border-radius:12px;box-shadow:none}
+.note.hc-zona-n::before{opacity:.6}
+.note.hc-zona-n .big{display:flex;flex-direction:column;align-items:center;font-size:clamp(14px,4.2vw,17px);margin:0;white-space:nowrap;letter-spacing:-.01em;line-height:1.1}
+.note.hc-zona-n .big small{font-size:9.5px;margin:0 0 1px;opacity:.85}
+.note.hc-zona-n .big.sano{animation-duration:1.8s}
 /* ===== Modo Navidad (html.navidad, lo activa navidad.js solo en diciembre) =====
    Rojo navideño para la marca y los botones; el verde (--accent) se queda como color de "positivo/ingreso"
    para no cambiar el significado de los montos. */
@@ -3643,6 +3653,10 @@ const H_PLAZOS = {
 /* Base de conocimiento de Hannah */
 const H_KB = {
   temas: [
+    { id: 'colores_monto', titulo: 'Los colores del monto para ahorrar', grupo: 'plan',
+      claves: ['parpadea', 'parpadeando', 'por que esta rojo', 'por que esta amarillo', 'numero rojo', 'numero amarillo', 'monto rojo', 'monto amarillo', 'zona roja', 'zona amarilla', 'zona verde', 'colores del monto', 'brilla verde'],
+      resp: 'El número de **Te queda para ahorrar** cambia de color para avisarte:\n\n🟢 **Verde**: vas bien. Brilla los primeros 30 segundos al abrir la app.\n🟡 **Amarillo**: cuidado, te queda menos del 10% de tus ingresos del mes.\n🔴 **Rojo**: te pasaste. El número es lo que gastaste de más.\n\nSi lo ves amarillo o rojo, frena los gastos del día a día y revisa en qué se fue: pregúntame “¿en qué gasto más este mes?”.',
+      ir: { tab: 'inicio' }, irTxt: 'Ver mi monto', sig: ['libre'] },
     { id: 'recordatorios_pagos', titulo: 'Recordatorios de pagos en tu celular', grupo: 'cuenta',
       claves: ['recordatorio de pago', 'recordatorios de pagos', 'avisame cuando tenga que pagar', 'aviso de pago', 'notificacion de pago', 'que me avise el dia de pago', 'hoy me toca pagar', 'recordar pagar la tarjeta', 'recordar la cuota'],
       resp: 'El día que te toca pagar algo, te llega un aviso al celular:\n\n• “Hoy vence el pago de tu tarjeta”\n• “Hoy toca la cuota de tu préstamo”\n• “Hoy te toca pagar la luz” o la universidad\n• “Hoy Emilio te paga” (lo que te deben)\n\nSe activa en **Ajustes → Recordatorios de pagos** y llega a la misma hora que mi consejo (la eliges tú). Si ya marcaste el pago en la app, no te aviso. Lo apagas cuando quieras, o dime “desactiva los recordatorios de pagos”.',
@@ -4874,7 +4888,7 @@ const H_FRASES = [
 const APP_VER = '1.7.2';
 const APP_FECHA = 'Noviembre 2026';
 const NOVEDADES = [
-  { v: '1.7.2', f: 'Noviembre 2026', items: ['Elige tu país (con su bandera) y tu moneda principal: RD$ o US$. Toda la app se muestra en ella y la cambias cuando quieras en Ajustes', 'Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”', 'Intereses de préstamos exactos como tu banco: ves el mismo “Balance a la fecha” que el banco, el interés acumulado desde tu último pago aparte y cuánto de tu cuota se va en intereses'] },
+  { v: '1.7.2', f: 'Noviembre 2026', items: ['El monto de lo que te queda para ahorrar cambia de color: verde si vas bien, amarillo si estás cerca de pasarte y rojo si te pasaste', 'Elige tu país (con su bandera) y tu moneda principal: RD$ o US$. Toda la app se muestra en ella y la cambias cuando quieras en Ajustes', 'Recordatorios de pagos en tu celular: “Hoy te toca pagar la luz”, “Hoy vence el pago de tu tarjeta”, “Hoy toca la cuota de tu préstamo”…', 'Elige a qué hora te llegan los avisos de Hannah: por defecto a las 10:00 a. m., y la mueves cuando quieras en Ajustes', 'Apaga el consejo diario o los recordatorios por separado, o pídeselo a Hannah: “cambia la hora de mi consejo a las 7 de la mañana”', 'Intereses de préstamos exactos como tu banco: ves el mismo “Balance a la fecha” que el banco, el interés acumulado desde tu último pago aparte y cuánto de tu cuota se va en intereses'] },
   { v: '1.7.0', f: 'Noviembre 2026', items: ['Pagos cada varios meses: bimestral, trimestral, cuatrimestral, semestral o anual (ej. la universidad)', 'Solo cuentan como gasto el mes que te toca y te avisa antes de la fecha', 'Si te ayudan con una parte (beca o subsidio), te digo cuánto sale de tu bolsillo', 'Opción de apartar un poco cada mes: creo una meta y cuando pagas empieza de cero para el próximo'] },
   { v: '1.6.0', f: 'Noviembre 2026', items: ['Gastos fijos que pagas por partes: cada semana, cada quincena o varias veces al mes (ej. peluquería RD$450 cada sábado)', 'La app calcula sola si el mes trae 4 o 5 semanas y vas marcando cada pago', '“¿Sabías que puedes…?”: Hannah te enseña la app poco a poco, sin saturarte', 'Tutorial nuevo y completo, por capítulos: desde cómo te avisa hasta cada función', 'Montos siempre con centavos exactos y préstamos conectados a su cuota por terminal'] },
   { v: '1.5.0', f: 'Noviembre 2026', items: ['Hannah te acompaña: te celebra cuando vas bien con el ahorro y te frena con cariño cuando te pasas', 'Consejo diario de Hannah como notificación a las 10:00 a. m. (lo activas o apagas en Ajustes)', 'Avisos de días feriados de República Dominicana, un día antes y el mismo día', 'Modo Navidad automático en diciembre, con Hannah de gorrito', 'Acerca de más simple: solo las últimas novedades'] },
@@ -5192,6 +5206,7 @@ const COACH = [
   // Capítulo 1 · Inicio
   { cap: 'Bienvenida', pose: 'saluda', t: '¡Bienvenid{o|a} al tutorial!', x: () => `¡Hola${hnNombre() ? ', ' + hnNombre() : ''}! Soy Hannah. En unos minutos te enseño todo lo que puede hacer la app: cómo se usa y cómo te voy avisando. Toca Siguiente o cualquier parte de la pantalla. Si ya la conoces, puedes omitirlo cuando quieras.` },
   { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view section.note'), pose: 'explica', t: () => document.documentElement.classList.contains('navidad') ? 'Tu billete navideño' : 'Tu billete verde', x: 'El número más importante: lo que te queda para ahorrar este mes. Es lo que entra, menos tus gastos fijos y lo del día a día. Mientras más grande, mejor vas.' },
+  { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view section.note'), pose: 'explica', t: 'Los 3 colores de tu monto', demo: 'zonas', x: 'Ese número cambia de color para avisarte cómo vas. Verde: vas bien (brilla al abrir la app). Amarillo: cuidado, te queda menos del 10% de tus ingresos. Rojo: te pasaste; frena un poquito los gastos del día a día.' },
   { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view section.daily'), pose: 'explica', t: 'Puedes gastar hoy', x: 'Te digo cuánto puedes gastar por día hasta tu próximo cobro, con tus fijos y tu ahorro ya separados. Si lo respetas, llegas al cobro sin apuros.' },
   { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view .hn-fer') || $('#view .hn-animo'), pose: 'celebra', t: 'Te aviso cómo vas', x: 'Aquí te escribo cuando vas bien con tu ahorro, cuando te falta poquito o cuando hay que apretar. También te aviso los días feriados de República Dominicana: el día antes y el mismo día.' },
   { cap: '1 · Tu Inicio', tab: 'inicio', el: () => $('#view .hn-tip-dia'), pose: 'piensa', t: 'Tu consejo del día', x: 'Cada día te dejo un consejo corto y una frase para motivarte. Si activas las notificaciones en Ajustes, te llega al celular a la hora que tú elijas (por defecto, 10:00 de la mañana).' },
@@ -5267,13 +5282,18 @@ function hnTourPaso(dir = 1) {
       <div class="hc-bub">
         <div class="hc-top"><b>${esc(st.cap || 'Hannah')}</b><span>${i + 1} / ${N}</span></div>
         <h3>${esc(gx(typeof st.t === 'function' ? st.t() : st.t))}</h3>
-        <p id="hcTxt" data-full="${esc(txt)}"></p>
+        <p id="hcTxt" data-full="${esc(txt)}"></p>${st.demo === 'zonas' ? hnZonasDemo() : ''}
         <div class="hc-bar"><i style="width:${Math.round((i + 1) / N * 100)}%"></i></div>
         <div class="hc-b">${i > 0 ? `<button class="hc-back" data-hn="tourAtras" aria-label="Anterior">${ICON.left}</button>` : ''}<button class="btn" data-hn="tourSig">${st.end ? '¡Empezar a ahorrar!' : i === 0 ? '¡Vamos!' : 'Siguiente'}</button></div>
       </div></div>`;
   hnCoachPos(); hnEscribir(txt);
   requestAnimationFrame(hnCoachPos);
   const b = c.querySelector('[data-hn=tourSig]'); if (b && !matchMedia('(pointer: coarse)').matches) b.focus({ preventScroll: true });
+}
+// Mini ejemplo de las 3 zonas del monto (verde, amarilla y roja) para el tutorial
+function hnZonasDemo() {
+  const z = [['sano', 'Vas bien', '18,500'], ['cerca', 'Cuidado', '2,300'], ['excedido', 'Te pasaste', '1,328']];
+  return `<div class="hc-zonas" aria-label="Ejemplos: verde vas bien, amarillo cuidado, rojo te pasaste">${z.map(([c, t, n]) => `<div class="hc-zona"><span class="hc-zona-t ${c}">${t}</span><div class="note hc-zona-n"><div class="big ${c}"><small>${SYM()}</small>${n}</div></div></div>`).join('')}</div>`;
 }
 function hnFijo(el) { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return true; } return false; }
 function hnCoachPos() {
