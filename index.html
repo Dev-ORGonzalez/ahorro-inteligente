@@ -789,6 +789,24 @@ body.pf-on .hn-btn,body.pf-on .hn-burb{display:none!important}
 .pf-op>span{display:grid;gap:2px}
 .pf-op:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .pf-bandera{font-size:.7em;vertical-align:.12em}
+/* ---------- "Te queda para ahorrar": alerta roja si te pasaste, brillo verde si vas bien ---------- */
+.libre-menos{font-weight:800;margin-right:2px}
+.note .big.excedido{animation:libreRojo 2.2s ease-in-out infinite;will-change:color,text-shadow}
+.note .big.excedido small{opacity:.95}
+@keyframes libreRojo{
+  0%,100%{color:#fff;text-shadow:0 0 0 rgba(255,90,95,0)}
+  45%,60%{color:#FF6B6B;text-shadow:0 0 18px rgba(255,90,95,.55),0 0 2px rgba(255,90,95,.9)}
+}
+.note .big.sano{animation:libreVerde 1.8s ease-in-out infinite}
+@keyframes libreVerde{
+  0%,100%{color:#fff;text-shadow:0 0 0 rgba(91,228,155,0)}
+  50%{color:#7CF0B0;text-shadow:0 0 16px rgba(91,228,155,.55)}
+}
+.note .big.sano-fin{transition:color .8s ease,text-shadow .8s ease;color:#fff;text-shadow:none}
+@media (prefers-reduced-motion: reduce){
+  .note .big.excedido{animation:none;color:#FF6B6B}
+  .note .big.sano{animation:none}
+}
 /* ===== Modo Navidad (html.navidad, lo activa navidad.js solo en diciembre) =====
    Rojo navideño para la marca y los botones; el verde (--accent) se queda como color de "positivo/ingreso"
    para no cambiar el significado de los montos. */
@@ -1436,7 +1454,7 @@ function vInicio() {
       <span class="coin" style="bottom:auto;top:44px">${svgI('coin', 78, 1.2)}</span>
       <div class="serial">${SYM()} · ${MES3[+S.mes.slice(5) - 1].toUpperCase()} ${S.mes.slice(0, 4)}</div>
       <div class="eyebrow">${r.libre >= 0 ? 'Te queda para ahorrar' : 'Te estás pasando por'}<button class="info-b" data-act="info" data-v="libre" aria-label="¿Qué es esto?">?</button></div>
-      <div class="big"><small>${SYM()}</small><span data-count="${Math.round(Math.abs(r.libre))}">${fmtN(Math.abs(r.libre), 0)}</span></div>
+      <div class="big libre-big ${r.libre < 0 ? 'excedido' : libreSano() ? 'sano' : ''}" id="libreBig" ${r.libre < 0 ? 'role="status" aria-label="Te pasaste por ' + money(Math.abs(r.libre)) + '"' : ''}>${r.libre < 0 ? '<span class="libre-menos" aria-hidden="true">−</span>' : ''}<small>${SYM()}</small><span data-count="${Math.round(Math.abs(r.libre))}">${fmtN(Math.abs(r.libre), 0)}</span></div>
       <div class="small" style="color:var(--note-muted);margin-top:4px">de ${money(r.ingreso)} de ingresos${r.ingSeguro ? ` (incluye ${moneyC(r.ingSeguro)} por recibir)` : ''} · ${r.ingreso > 0 ? Math.round(r.libre / r.ingreso * 100) : 0}% del mes</div>
       <div class="bar"><i style="width:${pF}%;background:#F2C35B"></i><i style="width:${pV}%;background:#F28A6B"></i></div>
       <div class="legend">
@@ -2063,6 +2081,15 @@ function showInfo(k) {
 const infoB = k => `<button class="info-b" data-act="info" data-v="${k}" aria-label="¿Qué significa?">?</button>`;
 const segPlan = a => `<div class="seg">${[['plan', 'Fijos'], ['extras', 'Extras'], ['proy', 'Proyección'], ['ahorro', 'Ahorro']].map(([k, n]) => `<button class="${a === k ? 'on' : ''}" ${a === k ? '' : `data-act="tab" data-v="${k}"`}>${n}</button>`).join('')}</div>`;
 
+// Al abrir la app, si vas bien, el monto brilla en verde los primeros 30 segundos
+const LIBRE_T0 = Date.now();
+function libreSano() {
+  const resto = 30000 - (Date.now() - LIBRE_T0);
+  if (resto <= 0) return false;
+  clearTimeout(libreSano.t);
+  libreSano.t = setTimeout(() => { const el = document.getElementById('libreBig'); if (el) el.classList.replace('sano', 'sano-fin'); }, resto);
+  return true;
+}
 function animar() {
   if (!S.anim) return; S.anim = false;
   try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
